@@ -103,33 +103,33 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn offchain_worker(block_number: T::BlockNumber) {
 			let ad: AssetData = AssetData {};
-			let local_store: StorageValueRef =
-				StorageValueRef::persistent(b"collateral-reader::my-storage");
-
+			let local_store: StorageValueRef = StorageValueRef::persistent(b"collateral-reader::my-storage");
+	
 			const RECENTLY_SENT: () = ();
-
-			for asset in ad.get_supported_assets() {
-				log::info!("assets: {:?}", asset);
-
-				let res: Result<T::BlockNumber, MutateStorageError<T::BlockNumber, ()>> =
-					local_store.mutate(
-						|last_send: Result<Option<T::BlockNumber>, StorageRetrievalError>| {
-							match last_send {
-								Ok(Some(block)) if block_number < block + T::GracePeriod::get() =>
-									Err(RECENTLY_SENT),
-								_ => Ok(block_number),
-							}
-						},
-					);
-
-				match res {
-					Ok(block_number) => {
-						let txrs = Self::send_signed(asset).unwrap_err();
-						log::info!("tx {:?}", txrs)
-					},
-					Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) => {},
-
-					Err(MutateStorageError::ConcurrentModification(_)) => {},
+	
+			let res = local_store.mutate(|last_send: Result<Option<T::BlockNumber>, StorageRetrievalError>| {
+				match last_send {
+					Ok(Some(block)) if block_number < block + T::GracePeriod::get() => {
+						Err(RECENTLY_SENT)
+					}
+					_ => Ok(block_number),
+				}
+			});
+	
+			if let Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) = res {
+				return;
+			}
+	
+			if let Err(MutateStorageError::ConcurrentModification(_)) = res {
+				return;
+			}
+	
+			if let Ok(block_number) = res {
+				for asset in ad.get_supported_assets() {
+					log::info!("assets: {:?}", asset);
+					if let Err(e) = Self::send_signed(asset.clone()) {
+						log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
+					}
 				}
 			}
 		}
@@ -206,29 +206,21 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		fn send_signed(asset: Asset) -> Result<(), &'static str> {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
-			if !signer.can_sign() {
-				return Err(
-					"No local accounts available. Consider adding one via `author_insertKey` RPC.",
-				)
-			}
-
-			let mut token: BoundedVec<u8, T::MaxVec> =   BoundedVec::default();
-			token.try_extend(asset.symbol.clone().into_iter());
-
-			log::info!("asset {:?}", token.clone());
-
-			let results = signer.send_signed_transaction(|_account| Call::save_asset_stats {
-				token: token.clone(),
-			});
-
-			for (acc, res) in &results {
-				match res {
-					Ok(()) => log::info!("[{:?}] Submitted Asset Stats:", acc.id),
-					Err(e) => log::error!("[{:?}] Failed to Asset Stats: {:?}", acc.id, e),
+			if signer.can_sign() {
+				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
+				token.try_extend(asset.symbol.clone().into_iter());
+				log::info!("asset {:?}", token.clone());
+				let results = signer.send_signed_transaction(|_account| Call::save_asset_stats { token: token.clone() });
+				for (acc, res) in &results {
+					match res {
+						Ok(()) => log::info!("[{:?}] Submitted Asset Stats:", acc.id),
+ 						Err(e) => log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e),
+					}
 				}
+				Ok(())
+			} else {
+				Err("No local accounts available. Consider adding one via `author_insertKey` RPC.")
 			}
-
-			Ok(())
 		}
 	}
 

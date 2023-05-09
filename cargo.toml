@@ -23,6 +23,9 @@ sp-core = { version = "7.0.0", default-features = false, path = "../../primitive
 sp-keystore = { version = "0.13.0", default-features = false, optional = true, path = "../../primitives/keystore" }
 
 
+[dev-dependencies]
+sp-io = { version = "7.0.0", path = "../../primitives/io" }
+
 [features]
 default = ["std"]
 

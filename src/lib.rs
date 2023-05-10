@@ -184,13 +184,13 @@ pub mod pallet {
 	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 	pub struct AssetStats {
 		/// The asset for which the statistics are being recorded.
-		asset: Vec<u8>,
+		pub asset: Vec<u8>,
 		/// The total amount of the asset that has been issued.
-		issued: u64,
+		pub issued: u64,
 		/// The total amount of the asset that is currently locked.
-		locked: u64,
+		pub locked: u64,
 		/// The asset that has been minted in relation to the original asset.
-		minted_asset: Vec<u8>,
+		pub minted_asset: Vec<u8>,
 	}
 
 	#[pallet::hooks]

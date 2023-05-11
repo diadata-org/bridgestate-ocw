@@ -122,7 +122,7 @@ git submodule update --init --recursive
 
 ```
 
-Build is using dockerfile provided
+Build using dockerfile provided
 
 ```sh
 sh ./docker/build.sh

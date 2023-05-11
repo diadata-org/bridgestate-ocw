@@ -82,7 +82,7 @@ type  GracePeriod = ConstU32<10>;
 
 This repository provides an example of a Substrate node configured with a custom pallet - the "Collateral Reader" pallet.  
 
-```
+```sh
 git clone git@github.com:nnn-gif/substrate-node.git
 git submodule update --init --recursive
 
@@ -90,14 +90,14 @@ git submodule update --init --recursive
 
 #### Start the node and dev network by running
 
-```
+```sh
 cargo build --release
 cargo run -- --dev
 ```
 
 Create an account or add a subkey to an existing account, e.g. the example account `Alice` via RPC
 
-```
+```sh
 curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
   '{
  "jsonrpc":"2.0",
@@ -110,4 +110,20 @@ curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
  ]
  }'
 
+```
+
+#### Using Docker
+
+Clone substrate-node repo
+
+```sh
+git clone git@github.com:nnn-gif/substrate-node.git
+git submodule update --init --recursive
+
+```
+
+Build is using dockerfile provided
+
+```sh
+sh ./docker/build.sh
 ```

@@ -2,7 +2,10 @@
 
 extern crate alloc;
 
+pub mod helper;
 pub mod impls;
+pub mod interlay;
+pub mod keys;
 
 use frame_support::{sp_runtime::KeyTypeId, traits::Get};
 use frame_system::offchain::{CreateSignedTransaction, SendSignedTransaction};
@@ -66,7 +69,7 @@ pub mod pallet {
 
 	#[pallet::config]
 	#[pallet::disable_frame_system_supertrait_check]
-	/// The `Config` trait provides the types and constants 
+	/// The `Config` trait provides the types and constants
 	pub trait Config: CreateSignedTransaction<Call<Self>> + frame_system::Config {
 		/// The identifier type for an offchain worker.
 		type AuthorityId: AppCrypto<Self::Public, Self::Signature>;
@@ -107,7 +110,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `u64` value representing the amount of the asset that is locked.
-		fn get_locked(asset: Vec<u8>) -> u64;
+		fn get_locked(self, asset: Vec<u8>) -> u128;
 
 		/// Returns the total issued amount of the specified asset.
 		///
@@ -118,7 +121,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `u64` value representing the total issued amount of the asset.
-		fn get_issued(asset: Vec<u8>) -> u64;
+		fn get_issued(self, asset: Vec<u8>) -> u128;
 
 		/// Returns the minted asset associated with the specified asset.
 		///
@@ -129,7 +132,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<u8>` representing the minted asset associated with the input asset.
-		fn get_minted_asset(asset: Vec<u8>) -> Vec<u8>;
+		fn get_minted_asset(self,asset: Vec<u8>) -> Vec<u8>;
 
 		/// Returns the assets associated with the specified minted asset.
 		///
@@ -165,6 +168,9 @@ pub mod pallet {
 	/// Currently, this structure is empty.
 	pub struct AssetData {}
 
+	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+	pub struct InterlayData {}
+
 	/// Represents a token name in the system.
 	/// Currently, this is represented as a `u32`.
 	pub type TokenName = u32;
@@ -186,9 +192,9 @@ pub mod pallet {
 		/// The asset for which the statistics are being recorded.
 		pub asset: Vec<u8>,
 		/// The total amount of the asset that has been issued.
-		pub issued: u64,
+		pub issued: u128,
 		/// The total amount of the asset that is currently locked.
-		pub locked: u64,
+		pub locked: u128,
 		/// The asset that has been minted in relation to the original asset.
 		pub minted_asset: Vec<u8>,
 	}
@@ -228,11 +234,28 @@ pub mod pallet {
 		}
 
 		pub fn send_transactions() {
-			let ad: AssetData = AssetData {};
-			for asset in ad.get_supported_assets() {
-				log::info!("assets: {:?}", asset);
-				if let Err(e) = Self::send_signed(asset.clone()) {
-					log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
+			// let ad: AssetData = AssetData {};
+			// for asset in ad.get_supported_assets() {
+			// 	log::info!("assets: {:?}", asset.symbol);
+
+			// 	if let Err(e) = Self::send_signed(asset.clone()) {
+			// 		log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
+			// 	}
+			// }
+
+			let id: InterlayData = InterlayData {};
+			for asset in id.clone().get_supported_assets() {
+				log::info!("InterlayData: {:?}", asset);
+
+				let asset_stats = AssetStats {
+					asset: asset.symbol.clone(),
+					locked: id.clone().get_locked(asset.clone().symbol),
+					issued: id.clone().get_issued(asset.clone().symbol),
+					minted_asset: id.clone().get_minted_asset(asset.clone().symbol),
+				};
+
+				if let Err(e) = Self::send_signed(asset.clone(), asset_stats.clone()) {
+					log::error!("Failed to submit InterlayData stats for {:?}: {:?}", asset, e);
 				}
 			}
 		}
@@ -256,7 +279,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		fn send_signed(asset: Asset) -> Result<(), &'static str> {
+		fn send_signed(asset: Asset, asset_stats: AssetStats) -> Result<(), &'static str> {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
 			if signer.can_sign() {
 				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
@@ -264,6 +287,7 @@ pub mod pallet {
 				log::info!("asset {:?}", token.clone());
 				let results = signer.send_signed_transaction(|_account| Call::save_asset_stats {
 					token: token.clone(),
+					asset_stats: asset_stats.clone(),
 				});
 				for (acc, res) in &results {
 					match res {
@@ -288,12 +312,13 @@ pub mod pallet {
 		pub fn save_asset_stats(
 			origin: OriginFor<T>,
 			token: BoundedVec<u8, T::MaxVec>,
+			asset_stats: AssetStats,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let asset = token.to_vec();
-			let locked = T::AssetHelper::get_locked(asset.clone());
-			let issued = T::AssetHelper::get_issued(asset.clone());
-			let minted_asset = T::AssetHelper::get_minted_asset(asset.clone());
+			let locked = asset_stats.locked;
+			let issued = asset_stats.issued;
+			let minted_asset = asset_stats.minted_asset;
 
 			Self::deposit_event(Event::AssetUpdated { token: token.clone(), who });
 

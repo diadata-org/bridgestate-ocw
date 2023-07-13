@@ -12,7 +12,7 @@ frame-support = { version = "4.0.0-dev", default-features = false, path = "../su
 frame-system = { version = "4.0.0-dev", default-features = false, path = "../system" }
 
 frame-metadata = { version = "15.1", default-features = false, features = ["v14", "serde_full", "decode"] }
- sp-std = { version = "5.0.0", default-features = false, path = "../../primitives/std" }
+sp-std = { version = "5.0.0", default-features = false, path = "../../primitives/std" }
 
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
@@ -21,16 +21,18 @@ log = { version = "0.4.14", default-features = false }
 sp-runtime = { version = "7.0.0", default-features = false, path = "../../primitives/runtime" }
 sp-core = { version = "7.0.0", default-features = false, path = "../../primitives/core" }
 sp-keystore = { version = "0.13.0", default-features = false, optional = true, path = "../../primitives/keystore" }
-
-
+sp-io = { version = "7.0.0", default-features = false,path = "../../primitives/io" }
+ serde_json = { version = '1.0.67', default-features = false, features = ['alloc'] }
+serde = { version = "1.0", default-features = false,features = ["derive"] }
+ 
 [dev-dependencies]
-sp-io = { version = "7.0.0", path = "../../primitives/io" }
 sp-keyring = { version = "7.0.0", path = "../../primitives/keyring" }
+hex = "0.4.0"
 
 
 [features]
 default = ["std"]
 
 
-std = [ "frame-support/std", "frame-system/std", "sp-std/std", "codec/std", "scale-info/std", "sp-runtime/std", "sp-core/std", "sp-keystore"]
+std = [ "frame-support/std", "serde/std",   "serde_json/std","frame-system/std", "sp-std/std", "codec/std", "scale-info/std", "sp-runtime/std", "sp-core/std", "sp-keystore"]
 try-runtime = ["frame-support/try-runtime"]

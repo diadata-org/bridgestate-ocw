@@ -8,9 +8,9 @@ pub struct RPCHelper2 {}
 pub trait RPCCalls {
 	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str>;
 
-	fn get_locked(&self, asset: Vec<u8>) -> Result<u64, &'static str>;
+	fn get_locked(&self, asset: Vec<u8>) -> Result<u128, &'static str>;
 
-	fn get_issued(&self, asset: Vec<u8>) -> Result<u64, &'static str>;
+	fn get_issued(&self, asset: Vec<u8>) -> Result<u128, &'static str>;
 
 	fn get_minted_asset(&self, asset: Vec<u8>) -> Result<Vec<u8>, &'static str>;
 
@@ -40,24 +40,15 @@ impl RPCCalls for RPCHelper1 {
 			// storage_key:
 			// b"0x99971b5749ac43e0235e41b0d378691857c875e4cff74148e4628f264b974c80c483de2de1246ea70002".to_vec()
 		});
-		assets.push(Asset {
-			address: b"2".to_vec(),
-			chain: b"interlay".to_vec(),
-			metadata: b"".to_vec(),
-			decimals: 0,
-			symbol: b"IBTC".to_vec(),
-			name: b"IBTC".to_vec(),
-			// storage_key:
-			// b"0x99971b5749ac43e0235e41b0d378691857c875e4cff74148e4628f264b974c80d67c5ba80ba065480001".to_vec()
-		});
+
 		Ok(assets)
 	}
 
-	fn get_locked(&self, _asset: Vec<u8>) -> Result<u64, &'static str> {
+	fn get_locked(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
 		Ok(45)
 	}
 
-	fn get_issued(&self, _asset: Vec<u8>) -> Result<u64, &'static str> {
+	fn get_issued(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
 		Ok(44)
 	}
 
@@ -75,11 +66,11 @@ impl RPCCalls for RPCHelper2 {
 		Err("err")
 	}
 
-	fn get_locked(&self, _asset: Vec<u8>) -> Result<u64, &'static str> {
+	fn get_locked(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
 		Err("err")
 	}
 
-	fn get_issued(&self, _asset: Vec<u8>) -> Result<u64, &'static str> {
+	fn get_issued(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
 		Err("err")
 	}
 
@@ -112,7 +103,7 @@ impl AssetCollector for AssetData {
 		vec![Asset::default()]
 	}
 
-	fn get_locked(asset: Vec<u8>) -> u64 {
+	fn get_locked(self,asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
         vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 	
@@ -129,7 +120,7 @@ impl AssetCollector for AssetData {
 		}
 		0
 	}
-	fn get_issued(asset: Vec<u8>) -> u64 {
+	fn get_issued(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
         vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 	
@@ -146,7 +137,7 @@ impl AssetCollector for AssetData {
 		}
 		0
 	}
-	fn get_minted_asset(asset: Vec<u8>) -> Vec<u8> {
+	fn get_minted_asset(self,asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
         vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 	

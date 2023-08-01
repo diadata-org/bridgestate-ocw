@@ -3,9 +3,9 @@ use crate::{Asset, AssetCollector, AssetData};
 use sp_std::{ str, vec, vec::Vec, boxed::Box};
 
 pub struct RPCHelper1 {}
-pub struct RPCHelper2 {}
+pub struct RPCHelper2 {}           
 
-pub trait RPCCalls {
+pub trait RPCCalls{
 	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str>;
 
 	fn get_locked(&self, asset: Vec<u8>) -> Result<u128, &'static str>;
@@ -86,8 +86,11 @@ impl RPCCalls for RPCHelper2 {
 impl AssetCollector for AssetData {
     
 	fn get_supported_assets(&self) -> Vec<Asset> {
-        let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
+		let helpers: Vec<Box<dyn RPCCalls>> =
+        vec![
+					Box::new(RPCHelper1 {}), 
+					Box::new(RPCHelper2 {})
+				];
 	
 
 		for helper in helpers {
@@ -105,7 +108,10 @@ impl AssetCollector for AssetData {
 
 	fn get_locked(self,asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
+        vec![
+					Box::new(RPCHelper1 {}), 
+					Box::new(RPCHelper2 {})
+				];
 	
 
 		for helper in helpers {
@@ -122,7 +128,10 @@ impl AssetCollector for AssetData {
 	}
 	fn get_issued(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
+        vec![
+					Box::new(RPCHelper1 {}), 
+					Box::new(RPCHelper2 {})
+				];
 	
 
 		for helper in helpers {
@@ -139,7 +148,10 @@ impl AssetCollector for AssetData {
 	}
 	fn get_minted_asset(self,asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
+        vec![
+					Box::new(RPCHelper1 {}), 
+					Box::new(RPCHelper2 {})
+				];
 	
 
 		for helper in helpers {
@@ -155,9 +167,12 @@ impl AssetCollector for AssetData {
 		vec![0]
 	}
 
-	fn get_associated_assets(minted_asset: Vec<u8>) -> Vec<u8> {
-        let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
+	fn get_associated_assets(self,minted_asset: Vec<u8>) -> Vec<u8> {
+    let helpers: Vec<Box<dyn RPCCalls>> =
+        vec![
+					Box::new(RPCHelper1 {}), 
+					Box::new(RPCHelper2 {})
+				];
 	
 
 		for helper in helpers {

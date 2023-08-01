@@ -189,7 +189,7 @@ impl AssetCollector for InterlayData {
 		vec![0]
 	}
 
-	fn get_associated_assets(minted_asset: Vec<u8>) -> Vec<u8> {
+	fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
 			vec![Box::new(RPCHelper1 {}), Box::new(InterlayRPCHelper1 {})];
 

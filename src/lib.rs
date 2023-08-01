@@ -4,6 +4,7 @@ extern crate alloc;
 
 pub mod helper;
 pub mod impls;
+pub mod multichain;
 pub mod interlay;
 pub mod keys;
 
@@ -13,18 +14,15 @@ pub use pallet::*;
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef};
 
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"dia!");
-
 pub mod crypto {
 	use sp_core::sr25519::Signature as Sr25519Signature;
 
-	use super::KEY_TYPE;
+	use crate::KEY_TYPE;
 	use frame_support::sp_runtime::{
 		app_crypto::{app_crypto, sr25519},
 		traits::Verify,
 		MultiSignature, MultiSigner,
 	};
-
-	use scale_info::prelude::format;
 
 	app_crypto!(sr25519, KEY_TYPE);
 
@@ -61,7 +59,7 @@ pub mod pallet {
 	};
 
 	use frame_support::storage::bounded_vec::BoundedVec;
-	use sp_std::{convert::TryInto, str, vec, vec::Vec};
+	use sp_std::{str, vec, vec::Vec};
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -90,7 +88,7 @@ pub mod pallet {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
-
+	
 	/// The `AssetCollector` trait defines a set of functions for interacting with
 	/// assets in a blockchain context.
 	pub trait AssetCollector {
@@ -143,7 +141,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<u8>` representing the assets associated with the minted asset.
-		fn get_associated_assets(minted_asset: Vec<u8>) -> Vec<u8>;
+		fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8>;
 	}
 
 	/// Represents an asset in the system.
@@ -169,6 +167,9 @@ pub mod pallet {
 	pub struct AssetData {}
 
 	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
+	pub struct MultichainData {}
+
+	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 	pub struct InterlayData {}
 
 	/// Represents a token name in the system.
@@ -183,7 +184,7 @@ pub mod pallet {
 		/// The asset that has been minted by the bridge.
 		minted_asset: Asset,
 		/// The amount of the minted asset.
-		minted_amount: u64,
+		minted_amount: u128,
 	}
 
 	/// Represents the statistics for an asset.
@@ -258,6 +259,20 @@ pub mod pallet {
 					log::error!("Failed to submit InterlayData stats for {:?}: {:?}", asset, e);
 				}
 			}
+			let md: MultichainData = MultichainData {};
+			for asset in md.get_supported_assets() {
+				let asset_id = asset.symbol.clone();
+				log::info!("assets: {:?}", asset);
+				let asset_stats = AssetStats {
+					asset: asset_id.clone(),
+					locked: md.clone().get_locked(asset_id.clone()),
+			 		issued: md.clone().get_issued(asset_id.clone()),
+			 	  minted_asset: md.clone().get_minted_asset(asset_id.clone()),
+				};
+				if let Err(e) = Self::send_signed_multichain(asset.clone(), asset_stats) {
+					log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
+				}
+			}
 		}
 	}
 
@@ -272,12 +287,6 @@ pub mod pallet {
 		AssetUpdated { token: BoundedVec<u8, T::MaxVec>, who: T::AccountId },
 	}
 
-	#[pallet::error]
-	pub enum Error<T> {
-		NoneValue,
-		StorageOverflow,
-	}
-
 	impl<T: Config> Pallet<T> {
 		fn send_signed(asset: Asset, asset_stats: AssetStats) -> Result<(), &'static str> {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
@@ -288,6 +297,31 @@ pub mod pallet {
 				let results = signer.send_signed_transaction(|_account| Call::save_asset_stats {
 					token: token.clone(),
 					asset_stats: asset_stats.clone(),
+				});
+				for (acc, res) in &results {
+					match res {
+						Ok(()) => {
+							log::info!("[{:?}] Submitted Asset Stats:", acc.id)
+						},
+						Err(e) =>
+							log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e),
+					}
+				}
+				Ok(())
+			} else {
+				Err("No local accounts available. Consider adding one via `author_insertKey` RPC.")
+			}
+		}
+
+		fn send_signed_multichain(asset: Asset, asset_stats: AssetStats) -> Result<(), &'static str> {
+			let signer = Signer::<T, T::AuthorityId>::all_accounts();
+			if signer.can_sign() {
+				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
+				token.try_extend(asset.symbol.clone().into_iter()).unwrap();
+				log::info!("asset {:?}", token.clone());
+				let results = signer.send_signed_transaction(|_account| Call::save_multichain_asset_stats {
+					token: token.clone(),
+					asset_stats: asset_stats.clone()
 				});
 				for (acc, res) in &results {
 					match res {
@@ -325,6 +359,24 @@ pub mod pallet {
 			<AssetStatsStorage<T>>::insert(
 				token,
 				AssetStats { asset: asset.clone(), issued, locked, minted_asset },
+			);
+
+			Ok(())
+		}
+
+		#[pallet::call_index(1)]
+		#[pallet::weight(10_000 + T::DbWeight::get().writes(1).ref_time())]
+		pub fn save_multichain_asset_stats(
+			origin: OriginFor<T>,
+			token: BoundedVec<u8, T::MaxVec>,
+			asset_stats: AssetStats
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			Self::deposit_event(Event::AssetUpdated { token: token.clone(), who });
+			log::info!("Saving asset stats {:?}", asset_stats.clone());
+			<AssetStatsStorage<T>>::insert(
+				token,
+				asset_stats,
 			);
 
 			Ok(())

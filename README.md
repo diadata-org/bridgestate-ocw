@@ -16,16 +16,16 @@ pub  trait  AssetCollector {
 fn  get_supported_assets(&self) -> Vec<Asset>;
 
 //  Returns the amount of the specified asset that is currently locked.
-fn  get_locked(asset: Vec<u8>) -> u64;
+fn  get_locked(self, asset: Vec<u8>) -> u64;
 
 // Returns the total issued amount of the specified asset.
-fn  get_issued(asset: Vec<u8>) -> u64;
+fn  get_issued(self, asset: Vec<u8>) -> u64;
 
 // Returns the minted asset associated with the specified asset
 fn  get_minted_asset(self,asset: Vec<u8>) -> Vec<u8>;
 
 // Returns the assets associated with the specified minted asset.( Used by Bridge Adaptor(wip))
-fn  get_associated_assets( minted_asset: Vec<u8>) -> Vec<u8>;
+fn  get_associated_assets( sefl, minted_asset: Vec<u8>) -> Vec<u8>;
 
 }
 

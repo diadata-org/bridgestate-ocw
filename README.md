@@ -112,6 +112,15 @@ curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
 
 ```
 
+#### Reading Collateral values
+
+To access the current state of supported Integration Assets, you can utilize the assetStatsStorage storage of the collateralReader pallet. This will give you insights into the collateral values of various assets integrated into the system.
+
+Please follow the instructions below to retrieve the collateral values:
+
+- Access the `assetStatsStorage` in the `collateralReader` pallet.
+- Obtain the current state of supported assets, including Interlay and Multichain assets.
+
 #### Using Docker
 
 Clone substrate-node repo

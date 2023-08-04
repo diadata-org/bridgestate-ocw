@@ -112,16 +112,49 @@ curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
 
 ```
 
-#### Reading Collateral values
+### Reading Collateral values using Browser
+
+### Reading Collateral values using Browser
 
 To access the current state of supported Integration Assets, you can utilize the assetStatsStorage storage of the collateralReader pallet. This will give you insights into the collateral values of various assets integrated into the system.
 
 Please follow the instructions below to retrieve the collateral values:
 
-- Access the `assetStatsStorage` in the `collateralReader` pallet.
-- Obtain the current state of supported assets, including Interlay and Multichain assets.
+- Open your web browser and go to https://polkadot.js.org/apps/#/explorer.
+- In the developer tab of the Polkadot Apps Explorer, navigate to the `Chain State` section.
+- Find and select the `collateralReader` pallet from the dropdown menu in the `Chain State` section.
+- Access the assetStatsStorage to view the current state of supported assets, including `Interlay` and `Multichain` assets.
 
-#### Using Docker
+
+
+#### Reading Collateral values using `@polkadot/api`
+
+```ts
+const { ApiPromise, WsProvider } = require('@polkadot/api');
+
+ const nodeEndpoint = 'ws://127.0.0.1:9944';
+
+async function readChainState() {
+   const provider = new WsProvider(nodeEndpoint);
+  const api = await ApiPromise.create({ provider });
+
+  try {
+     const palletName = 'collateralReader';
+
+     const storageFunction = 'assetStatsStorage';
+
+     const chainState = await api.query[palletName][storageFunction].entries();
+
+    console.log('Chain state:', chainState);
+  } catch (error) {
+    console.error('Error reading chain state:', error);
+  } finally {
+     await api.disconnect();
+  }
+}
+
+readChainState();
+```
 
 Clone substrate-node repo
 

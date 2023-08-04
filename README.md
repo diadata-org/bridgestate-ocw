@@ -112,9 +112,9 @@ curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
 
 ```
 
-### Reading Collateral values using Browser
+### Reading Collateral values
 
-### Reading Collateral values using Browser
+#### Reading Collateral values using Browser
 
 To access the current state of supported Integration Assets, you can utilize the assetStatsStorage storage of the collateralReader pallet. This will give you insights into the collateral values of various assets integrated into the system.
 

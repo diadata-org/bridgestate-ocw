@@ -42,7 +42,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 }
 
-
 impl frame_system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
@@ -110,12 +109,7 @@ where
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
-
 }
-
- 
-
- 
 
 pub fn new_offchain_test_ext(pool: TestTransactionPoolExt) -> sp_io::TestExternalities {
 	const PHRASE: &str =

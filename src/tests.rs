@@ -16,7 +16,6 @@ type Extrinsic = TestXt<RuntimeCall, ()>;
 use super::helper::Helper;
 use super::AssetStats;
 
-
 #[test]
 fn signed_transaction_on_chain() {
 	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
@@ -39,16 +38,12 @@ fn test_save_asset_event() {
 	let origin = frame_system::RawOrigin::Signed(alice.public());
 	let mut t = new_offchain_test_ext(pool);
 	let token: BoundedVec<u8, ConstU32<100>> = BoundedVec::default(); // Preferably use a more descriptive token
-	let asset_stats = AssetStats {
-		asset: b"".to_vec(),
-		locked: 0,
-		issued: 0,
-		minted_asset: b"".to_vec(),
-	};
+	let asset_stats =
+		AssetStats { asset: b"".to_vec(), locked: 0, issued: 0, minted_asset: b"".to_vec() };
 	t.execute_with(|| {
 		System::set_block_number(1);
 		let token_clone = token.clone();
-		TemplateModule::save_asset_stats(origin.into(), token_clone,asset_stats);
+		TemplateModule::save_asset_stats(origin.into(), token_clone, asset_stats);
 
 		// Ensure the event was emitted
 		let expected_token = token.clone();
@@ -76,12 +71,9 @@ fn save_asset_stats_works() {
 			minted_asset: b"LDOT".to_vec(),
 		};
 
-		TemplateModule::save_asset_stats(origin.into(), token.clone(),asset_stats.clone());
+		TemplateModule::save_asset_stats(origin.into(), token.clone(), asset_stats.clone());
 
-		assert_eq!(
-			TemplateModule::get_asset_stats(token.clone()),
-			Some(asset_stats)
-		);
+		assert_eq!(TemplateModule::get_asset_stats(token.clone()), Some(asset_stats));
 	});
 }
 
@@ -139,11 +131,7 @@ fn test_fetch_data() {
 
 #[test]
 fn test_total_user_vault_collateral() {
-
 	let r = Helper::total_user_vault_collateral();
 
 	println!("collateral: {}", r);
-
-	 
 }
-

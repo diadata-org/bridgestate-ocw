@@ -1,11 +1,11 @@
 use crate::{Asset, AssetCollector, AssetData};
 
-use sp_std::{ str, vec, vec::Vec, boxed::Box};
+use sp_std::{boxed::Box, str, vec, vec::Vec};
 
 pub struct RPCHelper1 {}
-pub struct RPCHelper2 {}           
+pub struct RPCHelper2 {}
 
-pub trait RPCCalls{
+pub trait RPCCalls {
 	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str>;
 
 	fn get_locked(&self, asset: Vec<u8>) -> Result<u128, &'static str>;
@@ -84,14 +84,9 @@ impl RPCCalls for RPCHelper2 {
 }
 
 impl AssetCollector for AssetData {
-    
 	fn get_supported_assets(&self) -> Vec<Asset> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![
-					Box::new(RPCHelper1 {}), 
-					Box::new(RPCHelper2 {})
-				];
-	
+			vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 
 		for helper in helpers {
 			let result = helper.get_supported_assets();
@@ -99,20 +94,16 @@ impl AssetCollector for AssetData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue
+					continue;
 				},
 			}
 		}
 		vec![Asset::default()]
 	}
 
-	fn get_locked(self,asset: Vec<u8>) -> u128 {
+	fn get_locked(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![
-					Box::new(RPCHelper1 {}), 
-					Box::new(RPCHelper2 {})
-				];
-	
+			vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 
 		for helper in helpers {
 			let result = helper.get_locked(asset.clone());
@@ -120,7 +111,7 @@ impl AssetCollector for AssetData {
 				Ok(locked) => return locked,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue
+					continue;
 				},
 			}
 		}
@@ -128,11 +119,7 @@ impl AssetCollector for AssetData {
 	}
 	fn get_issued(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![
-					Box::new(RPCHelper1 {}), 
-					Box::new(RPCHelper2 {})
-				];
-	
+			vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 
 		for helper in helpers {
 			let result = helper.get_issued(asset.clone());
@@ -140,19 +127,15 @@ impl AssetCollector for AssetData {
 				Ok(issued) => return issued,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue
+					continue;
 				},
 			}
 		}
 		0
 	}
-	fn get_minted_asset(self,asset: Vec<u8>) -> Vec<u8> {
+	fn get_minted_asset(self, asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![
-					Box::new(RPCHelper1 {}), 
-					Box::new(RPCHelper2 {})
-				];
-	
+			vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 
 		for helper in helpers {
 			let result = helper.get_minted_asset(asset.clone());
@@ -160,20 +143,16 @@ impl AssetCollector for AssetData {
 				Ok(mintedasset) => return mintedasset,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue
+					continue;
 				},
 			}
 		}
 		vec![0]
 	}
 
-	fn get_associated_assets(self,minted_asset: Vec<u8>) -> Vec<u8> {
-    let helpers: Vec<Box<dyn RPCCalls>> =
-        vec![
-					Box::new(RPCHelper1 {}), 
-					Box::new(RPCHelper2 {})
-				];
-	
+	fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
+		let helpers: Vec<Box<dyn RPCCalls>> =
+			vec![Box::new(RPCHelper1 {}), Box::new(RPCHelper2 {})];
 
 		for helper in helpers {
 			let result = helper.get_associated_assets(minted_asset.clone());
@@ -181,7 +160,7 @@ impl AssetCollector for AssetData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue
+					continue;
 				},
 			}
 		}

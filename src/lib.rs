@@ -4,9 +4,9 @@ extern crate alloc;
 
 pub mod helper;
 pub mod impls;
-pub mod multichain;
 pub mod interlay;
 pub mod keys;
+pub mod multichain;
 
 use frame_support::{sp_runtime::KeyTypeId, traits::Get};
 use frame_system::offchain::{CreateSignedTransaction, SendSignedTransaction};
@@ -88,7 +88,7 @@ pub mod pallet {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 	}
-	
+
 	/// The `AssetCollector` trait defines a set of functions for interacting with
 	/// assets in a blockchain context.
 	pub trait AssetCollector {
@@ -130,7 +130,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<u8>` representing the minted asset associated with the input asset.
-		fn get_minted_asset(self,asset: Vec<u8>) -> Vec<u8>;
+		fn get_minted_asset(self, asset: Vec<u8>) -> Vec<u8>;
 
 		/// Returns the assets associated with the specified minted asset.
 		///
@@ -215,18 +215,19 @@ pub mod pallet {
 
 			let res = local_store.mutate(
 				|last_send: Result<Option<T::BlockNumber>, StorageRetrievalError>| match last_send {
-					Ok(Some(block)) if block_number < block + T::GracePeriod::get() =>
-						Err(RECENTLY_SENT),
+					Ok(Some(block)) if block_number < block + T::GracePeriod::get() => {
+						Err(RECENTLY_SENT)
+					},
 					_ => Ok(block_number),
 				},
 			);
 
 			if let Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) = res {
-				return
+				return;
 			}
 
 			if let Err(MutateStorageError::ConcurrentModification(_)) = res {
-				return
+				return;
 			}
 
 			if let Ok(_) = res {
@@ -266,8 +267,8 @@ pub mod pallet {
 				let asset_stats = AssetStats {
 					asset: asset_id.clone(),
 					locked: md.clone().get_locked(asset_id.clone()),
-			 		issued: md.clone().get_issued(asset_id.clone()),
-			 	  minted_asset: md.clone().get_minted_asset(asset_id.clone()),
+					issued: md.clone().get_issued(asset_id.clone()),
+					minted_asset: md.clone().get_minted_asset(asset_id.clone()),
 				};
 				if let Err(e) = Self::send_signed_multichain(asset.clone(), asset_stats) {
 					log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
@@ -303,8 +304,9 @@ pub mod pallet {
 						Ok(()) => {
 							log::info!("[{:?}] Submitted Asset Stats:", acc.id)
 						},
-						Err(e) =>
-							log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e),
+						Err(e) => {
+							log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e)
+						},
 					}
 				}
 				Ok(())
@@ -313,23 +315,28 @@ pub mod pallet {
 			}
 		}
 
-		fn send_signed_multichain(asset: Asset, asset_stats: AssetStats) -> Result<(), &'static str> {
+		fn send_signed_multichain(
+			asset: Asset,
+			asset_stats: AssetStats,
+		) -> Result<(), &'static str> {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
 			if signer.can_sign() {
 				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
 				token.try_extend(asset.symbol.clone().into_iter()).unwrap();
 				log::info!("asset {:?}", token.clone());
-				let results = signer.send_signed_transaction(|_account| Call::save_multichain_asset_stats {
-					token: token.clone(),
-					asset_stats: asset_stats.clone()
-				});
+				let results =
+					signer.send_signed_transaction(|_account| Call::save_multichain_asset_stats {
+						token: token.clone(),
+						asset_stats: asset_stats.clone(),
+					});
 				for (acc, res) in &results {
 					match res {
 						Ok(()) => {
 							log::info!("[{:?}] Submitted Asset Stats:", acc.id)
 						},
-						Err(e) =>
-							log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e),
+						Err(e) => {
+							log::error!("[{:?}] Failed to submit Asset Stats: {:?}", acc.id, e)
+						},
 					}
 				}
 				Ok(())
@@ -369,15 +376,12 @@ pub mod pallet {
 		pub fn save_multichain_asset_stats(
 			origin: OriginFor<T>,
 			token: BoundedVec<u8, T::MaxVec>,
-			asset_stats: AssetStats
+			asset_stats: AssetStats,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::deposit_event(Event::AssetUpdated { token: token.clone(), who });
 			log::info!("Saving asset stats {:?}", asset_stats.clone());
-			<AssetStatsStorage<T>>::insert(
-				token,
-				asset_stats,
-			);
+			<AssetStatsStorage<T>>::insert(token, asset_stats);
 
 			Ok(())
 		}

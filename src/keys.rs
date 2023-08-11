@@ -1,14 +1,13 @@
-
 pub mod Keys {
-    use sp_core::storage::StorageKey;
-    use sp_io::hashing::{blake2_256, twox_128};
-    use sp_std::vec::Vec;
-    use scale_info::prelude::string::String;
+	use scale_info::prelude::string::String;
+	use sp_core::storage::StorageKey;
+	use sp_io::hashing::{blake2_256, twox_128};
+	use sp_std::vec::Vec;
 	/// create key for a simple value.
 	pub fn value(module: &[u8], storage: &[u8]) -> StorageKey {
 		let mut final_key = [0u8; 32];
-		final_key[0..16].copy_from_slice(&twox_128(module ));
-		final_key[16..32].copy_from_slice(&twox_128(storage ));
+		final_key[0..16].copy_from_slice(&twox_128(module));
+		final_key[16..32].copy_from_slice(&twox_128(storage));
 		StorageKey(final_key.to_vec())
 	}
 
@@ -23,7 +22,7 @@ pub mod Keys {
 		final_key.extend_from_slice(&key);
 		StorageKey(final_key)
 	}
-/* 
+	/*
 	/// create key for a linked_map head.
 	pub fn linked_map_head(module: String, storage: String) -> StorageKey {
 		let head_prefix = "HeadOf".to_string() + &storage;
@@ -32,5 +31,5 @@ pub mod Keys {
 		final_key[16..32].copy_from_slice(&twox_128(head_prefix.as_bytes()));
 		StorageKey(final_key.to_vec())
 	}
-    */
+	*/
 }

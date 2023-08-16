@@ -8,24 +8,28 @@ edition = "2021"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-frame-support = { version = "4.0.0-dev", default-features = false, path = "../support" }
-frame-system = { version = "4.0.0-dev", default-features = false, path = "../system" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+
+
 
 frame-metadata = { version = "15.1", default-features = false, features = ["v14", "serde_full", "decode"] }
- sp-std = { version = "5.0.0", default-features = false, path = "../../primitives/std" }
+ sp-std = {version = "5.0.0", git = "https://github.com/paritytech//substrate", branch = "polkadot-v0.9.40" }
 
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
 log = { version = "0.4.14", default-features = false }
 
-sp-runtime = { version = "7.0.0", default-features = false, path = "../../primitives/runtime" }
-sp-core = { version = "7.0.0", default-features = false, path = "../../primitives/core" }
-sp-keystore = { version = "0.13.0", default-features = false, optional = true, path = "../../primitives/keystore" }
+sp-runtime = {version = "7.0.0", git = "https://github.com/paritytech//substrate",default-features = false, branch = "polkadot-v0.9.40" }
+
+sp-core = {version = "7.0.0", git = "https://github.com/paritytech//substrate",default-features = false, branch = "polkadot-v0.9.40" }
+
+sp-keystore = { version = "0.13.0", default-features = false, optional = true,  git = "https://github.com/paritytech//substrate",branch = "polkadot-v0.9.40" }
 
 
 [dev-dependencies]
-sp-io = { version = "7.0.0", path = "../../primitives/io" }
-sp-keyring = { version = "7.0.0", path = "../../primitives/keyring" }
+sp-io = { version = "7.0.0",  git = "https://github.com/paritytech//substrate",branch = "polkadot-v0.9.40" }
+sp-keyring = { version = "7.0.0",  git = "https://github.com/paritytech//substrate",branch = "polkadot-v0.9.40" }
 
 
 [features]

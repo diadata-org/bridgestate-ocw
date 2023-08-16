@@ -36,5 +36,18 @@ sp-keyring = { version = "7.0.0",  git = "https://github.com/paritytech//substra
 default = ["std"]
 
 
-std = [ "frame-support/std", "frame-system/std", "sp-std/std", "codec/std", "scale-info/std", "sp-runtime/std", "sp-core/std", "sp-keystore"]
+std = [
+  "serde/std",
+  "serde_json/std",
+  "frame-support/std",
+  "frame-system/std",
+  "sp-std/std",
+  "sp-io/std",
+  "codec/std",
+  "scale-info/std",
+  "sp-runtime/std",
+  "sp-core/std",
+  "sp-keystore",
+]
+
 try-runtime = ["frame-support/try-runtime"]

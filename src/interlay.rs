@@ -10,7 +10,7 @@ use scale_info::prelude::string::String;
 
 use sp_std::{boxed::Box, str, vec, vec::Vec};
 
-use crate::{helper::Helper, keys::Keys};
+use crate::helper::Helper;
 
 #[derive(Serialize, Deserialize)]
 struct RpcResponse {
@@ -98,8 +98,8 @@ impl RPCCalls for InterlayRPCHelper1 {
 		log::info!("baclkable dot: {}", issued_dot / (oracle_dot / 100000000000000000000));
 		log::info!("baclkable usdt: {}", issued_usdt / (oracle_usdt / 100000000000000000000));
 
-		let total_backable = issued_dot / (oracle_dot / 100000000000000000000)
-			+ issued_usdt / (oracle_usdt / 100000000000000000000);
+		let total_backable = issued_dot / (oracle_dot / 100000000000000000000) +
+			issued_usdt / (oracle_usdt / 100000000000000000000);
 
 		Ok(total_backable / 100)
 	}
@@ -123,7 +123,7 @@ impl AssetCollector for InterlayData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -142,7 +142,7 @@ impl AssetCollector for InterlayData {
 				Ok(locked) => return locked,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -157,7 +157,7 @@ impl AssetCollector for InterlayData {
 				Ok(issued) => return issued,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -172,7 +172,7 @@ impl AssetCollector for InterlayData {
 				Ok(mintedasset) => return mintedasset,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -189,7 +189,7 @@ impl AssetCollector for InterlayData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}

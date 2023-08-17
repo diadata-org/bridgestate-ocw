@@ -94,7 +94,7 @@ impl AssetCollector for AssetData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -111,7 +111,7 @@ impl AssetCollector for AssetData {
 				Ok(locked) => return locked,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -127,7 +127,7 @@ impl AssetCollector for AssetData {
 				Ok(issued) => return issued,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -143,7 +143,7 @@ impl AssetCollector for AssetData {
 				Ok(mintedasset) => return mintedasset,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -160,7 +160,7 @@ impl AssetCollector for AssetData {
 				Ok(assets) => return assets,
 				Err(_e) => {
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}

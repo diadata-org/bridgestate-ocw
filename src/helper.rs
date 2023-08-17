@@ -1,10 +1,7 @@
 pub mod Helper {
 	use crate::alloc::borrow::ToOwned;
-	use codec::{Decode, Input};
 	use frame_support::{StorageHasher, Twox128, Twox64Concat};
-	use scale_info::prelude::format;
-	use scale_info::prelude::string::String;
-	use scale_info::prelude::vec;
+	use scale_info::prelude::{format, string::String, vec};
 	use serde::{Deserialize, Serialize};
 	use serde_json::{json, to_value, Value};
 	use sp_core::storage::StorageKey;
@@ -42,10 +39,9 @@ pub mod Helper {
 	//     pallet_prefix: &str,
 	//     map_name: &str,
 	//     key: &[u8],
-	// ) -> StorageKey {
-	//     let key_hashed = H::hash(key);
-	//     let pallet_prefix_hashed = frame_support::Twox128::hash(pallet_prefix.as_bytes());
-	//     let storage_prefix_hashed = frame_support::Twox128::hash(map_name.as_bytes());
+	// ) -> StorageKey { let key_hashed = H::hash(key); let pallet_prefix_hashed =
+	//   frame_support::Twox128::hash(pallet_prefix.as_bytes()); let storage_prefix_hashed =
+	//   frame_support::Twox128::hash(map_name.as_bytes());
 
 	//     let mut final_key = Vec::with_capacity(
 	//         pallet_prefix_hashed.len() + storage_prefix_hashed.len() + key_hashed.as_ref().len(),
@@ -122,7 +118,7 @@ pub mod Helper {
 		let response = pending.try_wait(deadline).map_err(|_| http::Error::DeadlineReached)??;
 		if response.code != 200 {
 			log::info!("Unexpected status code: {}", response.code);
-			return Err(http::Error::Unknown);
+			return Err(http::Error::Unknown)
 		}
 
 		let body = response.body().collect::<Vec<u8>>();
@@ -161,9 +157,9 @@ pub mod Helper {
 		let mut storage_key_hash = to_hex(storage_key);
 
 		if token.ne(&String::from("DOT")) {
-			storage_key_hash = "0x".to_owned()
-				+ &storage_key_hash
-				+ "ed11b90b07067c86130c95aabfcb699c01020000000001";
+			storage_key_hash = "0x".to_owned() +
+				&storage_key_hash +
+				"ed11b90b07067c86130c95aabfcb699c01020000000001";
 		} else {
 			storage_key_hash =
 				"0x".to_owned() + &storage_key_hash + "d6bfa4fbbbb302d0f4e13a890467318100000001";
@@ -205,9 +201,9 @@ pub mod Helper {
 		let mut storage_key_hash = to_hex(storage_key);
 
 		if token.ne(&String::from("DOT")) {
-			storage_key_hash = "0x".to_owned()
-				+ &storage_key_hash
-				+ "e8ee4335018f6743c682ee73dfe0674c000102000000";
+			storage_key_hash = "0x".to_owned() +
+				&storage_key_hash +
+				"e8ee4335018f6743c682ee73dfe0674c000102000000";
 		} else {
 			storage_key_hash =
 				"0x".to_owned() + &storage_key_hash + "7b79be5e9b370ba6d080e4e2af7b7b89000000";

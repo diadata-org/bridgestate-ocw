@@ -1,21 +1,28 @@
 use crate as pallet_template;
 use crate as pallet_collateral_reader;
-use frame_support::{
-	parameter_types,
-	traits::{ConstU32, ConstU64},
-};
+use crate::{Asset, AssetCollector, InterlayData};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64};
 use frame_system as system;
 use sp_core::{offchain::testing::TestTransactionPoolExt, H256};
 use sp_runtime::{
 	testing::Header,
+	traits,
 	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
 };
 
+pub struct MockInterlayData;
 use sp_runtime::{
-	testing::TestXt,
-	traits::{Extrinsic as ExtrinsicT, IdentifyAccount, Verify},
-	RuntimeAppPublic,
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{
+		AccountIdConversion, AccountIdLookup, IdentifyAccount, NumberFor, One, SaturatedConversion,
+		StaticLookup, Verify,
+	},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, MultiSignature,
 };
+
+use sp_runtime::{testing::TestXt, traits::Extrinsic as ExtrinsicT, RuntimeAppPublic};
 
 use sp_core::{
 	offchain::{testing, OffchainWorkerExt, TransactionPoolExt},
@@ -23,24 +30,15 @@ use sp_core::{
 };
 use sp_keystore::{testing::MemoryKeystore, Keystore, KeystoreExt};
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
 		System: frame_system,
 		TemplateModule: pallet_collateral_reader,
 	}
 );
-
-parameter_types! {
-	pub const BlockHashCount: u64 = 250;
-	pub const SS58Prefix: u8 = 42;
-}
 
 impl frame_system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
@@ -49,13 +47,14 @@ impl frame_system::Config for Test {
 	type DbWeight = ();
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
-	type Index = u64;
-	type BlockNumber = u64;
+	type Nonce = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
+	// type AccountId = u64;
+	type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Block = Block;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = ConstU64<250>;
 	type Version = ();
@@ -64,9 +63,9 @@ impl frame_system::Config for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
-	type SS58Prefix = ();
+	type SS58Prefix = ConstU16<42>;
 	type OnSetCode = ();
-	type MaxConsumers = ConstU32<16>;
+	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
 impl pallet_template::Config for Test {
@@ -78,7 +77,7 @@ impl pallet_template::Config for Test {
 }
 
 impl frame_system::offchain::SigningTypes for Test {
-	type Public = <Signature as Verify>::Signer;
+	type Public = <Signature as traits::Verify>::Signer;
 	type Signature = Signature;
 }
 type Extrinsic = TestXt<RuntimeCall, ()>;
@@ -108,7 +107,7 @@ where
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+	frame_system::GenesisConfig::<Test>::default().build_storage().unwrap().into()
 }
 
 pub fn new_offchain_test_ext(pool: TestTransactionPoolExt) -> sp_io::TestExternalities {
@@ -126,4 +125,41 @@ pub fn new_offchain_test_ext(pool: TestTransactionPoolExt) -> sp_io::TestExterna
 	t.register_extension(TransactionPoolExt::new(pool));
 	t.register_extension(KeystoreExt::new(keystore));
 	t
+}
+
+impl AssetCollector for MockInterlayData {
+	fn get_supported_assets(&self) -> Vec<Asset> {
+		// Return a mock list of supported assets
+		vec![
+			Asset {
+				address: vec![1],
+				chain: vec![2],
+				metadata: vec![3],
+				decimals: 0,
+				symbol: vec![4],
+				name: vec![5],
+			},
+			// Add more mock assets if needed
+		]
+	}
+
+	fn get_locked(self, _asset: Vec<u8>) -> u128 {
+		// Return a mock locked amount
+		123
+	}
+
+	fn get_issued(self, _asset: Vec<u8>) -> u128 {
+		// Return a mock issued amount
+		456
+	}
+
+	fn get_minted_asset(self, _asset: Vec<u8>) -> Vec<u8> {
+		// Return a mock minted asset
+		vec![4, 5, 6]
+	}
+
+	fn get_associated_assets(self, _minted_asset: Vec<u8>) -> Vec<u8> {
+		// Return a mock associated asset
+		vec![7, 8, 9]
+	}
 }

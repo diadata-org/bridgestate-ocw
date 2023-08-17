@@ -4,8 +4,7 @@ use frame_support::RuntimeDebug;
 use scale_info::prelude::string::String;
 use serde::{Deserialize, Serialize};
 use sp_runtime::offchain::{http::Request, storage::StorageValueRef, Duration};
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::{boxed::Box, str, vec, vec::Vec};
+use sp_std::{boxed::Box, collections::btree_map::BTreeMap, str, vec, vec::Vec};
 
 const FETCH_TIMEOUT_PERIOD: u64 = 5_000; // in milli-seconds
 const RPC_FETCH_TIMEOUT_PERIOD: u64 = 5_000; // in milli-seconds
@@ -138,7 +137,7 @@ fn get_chains() -> Result<Vec<Chain>, Error> {
 	let multichain_chains_store: StorageValueRef = StorageValueRef::persistent(CHAINS_STORAGE_KEY);
 	if let Ok(Some(chains)) = multichain_chains_store.get::<Vec<Chain>>() {
 		// chains has already been fetched. Return early.
-		return Ok(chains);
+		return Ok(chains)
 	} else {
 		const HTTP_REMOTE_REQUEST: &str = "https://scanapi.multichain.org/data/chain?type=mainnet";
 		let resp_str = match call_api(HTTP_REMOTE_REQUEST) {
@@ -172,7 +171,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 	let multichain_assets_store: StorageValueRef = StorageValueRef::persistent(ASSETS_STORAGE_KEY);
 	if let Ok(Some(assets)) = multichain_assets_store.get::<Vec<Asset>>() {
 		// assets has already been fetched. Return early.
-		return Ok(assets);
+		return Ok(assets)
 	} else {
 		const HTTP_REMOTE_REQUEST: &str = "https://bridgeapi.multichain.org/v4/tokenlistv4/1";
 		let resp_str = match call_api(HTTP_REMOTE_REQUEST) {
@@ -192,7 +191,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 		for (_, value) in response.iter() {
 			let symbol = &value.symbol.as_str().clone();
 			if !whitelisted_asset_symbols.contains(&symbol) {
-				continue;
+				continue
 			}
 			let asset = Asset {
 				name: value.name.clone().into(),
@@ -204,11 +203,11 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 			};
 			for (_, associated_asset_dest_chains) in value.dest_chains.iter() {
 				for (_, associated_asset) in associated_asset_dest_chains.iter() {
-					if associated_asset.anytoken.is_none()
-						|| associated_asset.fromanytoken.is_none()
+					if associated_asset.anytoken.is_none() ||
+						associated_asset.fromanytoken.is_none()
 					{
 						// skip this object if it doesn't have both anytoken and fromanytoken.
-						continue;
+						continue
 					}
 					let fromanytoken = associated_asset.fromanytoken.clone().unwrap();
 					associated_assets.push(AssociatedAsset {
@@ -224,8 +223,8 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 							.clone()
 							.into(),
 						address_that_has_issued_assets: fromanytoken.address.clone().into(),
-						minted_asset: fromanytoken.chain_id
-							== Some(String::from(str::from_utf8(ETH_CHAIN_ID).unwrap())),
+						minted_asset: fromanytoken.chain_id ==
+							Some(String::from(str::from_utf8(ETH_CHAIN_ID).unwrap())),
 					})
 				}
 			}
@@ -237,7 +236,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 			StorageValueRef::persistent(ASSOCIATED_ASSETS_STORAGE_KEY);
 		multichain_associated_assets_store.set(&associated_assets);
 
-		return Ok(assets);
+		return Ok(assets)
 	}
 }
 
@@ -272,7 +271,7 @@ fn call_api(url: &str) -> Result<Vec<u8>, Error> {
 
 	if response.code != 200 {
 		log::error!("Unexpected http request status code: {}", response.code);
-		return Err(<Error>::HttpFetchingError);
+		return Err(<Error>::HttpFetchingError)
 	}
 
 	// Next we fully read the response body and collect it to a vector of bytes.
@@ -325,7 +324,7 @@ fn get_erc20_token_balance(
 
 	if response.code != 200 {
 		log::error!("Unexpected http request status code: {}", response.code);
-		return Err(<Error>::HttpFetchingError);
+		return Err(<Error>::HttpFetchingError)
 	}
 
 	// Next we fully read the response body and collect it to a vector of bytes.
@@ -341,7 +340,7 @@ fn get_assets_stats() -> Result<(), Error> {
 	})?;
 	if assets.is_none() {
 		// early return for when assets are not ready yet.
-		return Ok(());
+		return Ok(())
 	}
 	let multichain_associated_assets_store: StorageValueRef =
 		StorageValueRef::persistent(ASSOCIATED_ASSETS_STORAGE_KEY);
@@ -352,7 +351,7 @@ fn get_assets_stats() -> Result<(), Error> {
 	})?;
 	if chains.is_none() {
 		// early return for when chains are not ready yet.
-		return Ok(());
+		return Ok(())
 	}
 	let mut all_stats: Vec<MultichainAssetStats> = vec![];
 	let unwrapped_chains = chains.unwrap();
@@ -379,7 +378,7 @@ fn get_assets_stats() -> Result<(), Error> {
 		for associated_asset in associated_assets_of_current_asset.iter() {
 			let chain = unwrapped_chains.iter().find(|x| x.id == associated_asset.chain_id);
 			if chain.is_none() {
-				continue;
+				continue
 			}
 			let chain_rpc_url = chain.unwrap().rpc.clone();
 			let eth_chain =
@@ -441,16 +440,14 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 					<Error>::DeserializeToObjError
 				});
 				if let Err(_e) = parsed {
-					continue;
+					continue
 				}
 				let amount: BalanceRpcResponse = parsed.unwrap();
 				let parsed_amount =
 					u128::from_str_radix(crop_letters(&amount.result, 2), 16).unwrap();
 				total_amount += parsed_amount;
 			},
-			Err(_e) => {
-				continue;
-			},
+			Err(_e) => continue,
 		}
 	}
 	total_amount
@@ -462,7 +459,7 @@ impl RPCCalls for MultichainRPCHelper {
 	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
 		let assets = get_assets();
 		if let Err(_e) = assets {
-			return Err("MultichainRPC, error getting supported assets.");
+			return Err("MultichainRPC, error getting supported assets.")
 		}
 		Ok(assets.unwrap())
 	}
@@ -475,16 +472,16 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<MultichainAssetStats>>()
 			.map_err(|e| {
 				log::error!("multichain_stats_store {:?}", e);
-				return b"MultichainRPCHelper, error getting asset stats.";
+				return b"MultichainRPCHelper, error getting asset stats."
 			})
 			.unwrap();
 		if stats.is_none() {
-			return Ok(0);
+			return Ok(0)
 		}
 		let long_lived_stats = stats.unwrap().clone();
 		let asset_stats = long_lived_stats.iter().find(|i| i.asset_id == asset);
 		if asset_stats.is_none() {
-			return Err("MultichainRPCHelper, error getting issued amount.");
+			return Err("MultichainRPCHelper, error getting issued amount.")
 		}
 		Ok(asset_stats.unwrap().locked)
 	}
@@ -497,16 +494,16 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<MultichainAssetStats>>()
 			.map_err(|e| {
 				log::error!("multichain_stats_store {:?}", e);
-				return b"MultichainRPCHelper, error getting asset stats.";
+				return b"MultichainRPCHelper, error getting asset stats."
 			})
 			.unwrap();
 		if stats.is_none() {
-			return Ok(0);
+			return Ok(0)
 		}
 		let long_lived_stats = stats.unwrap().clone();
 		let asset_stats = long_lived_stats.iter().find(|i| i.asset_id == asset);
 		if asset_stats.is_none() {
-			return Err("MultichainRPCHelper, error getting issued amount.");
+			return Err("MultichainRPCHelper, error getting issued amount.")
 		}
 		Ok(asset_stats.unwrap().issued)
 	}
@@ -517,14 +514,14 @@ impl RPCCalls for MultichainRPCHelper {
 		let associated_assets =
 			multichain_associated_assets_store.get::<Vec<AssociatedAsset>>().map_err(|e| {
 				log::error!("multichain_associated_assets_store {:?}", e);
-				return "MultichainRPCHelper, error getting assets.";
+				return "MultichainRPCHelper, error getting assets."
 			});
 		if let Err(_x) = associated_assets {
-			return Ok("".into());
+			return Ok("".into())
 		}
 		let unwrapped_associated_assets = associated_assets.unwrap();
 		if unwrapped_associated_assets.is_none() {
-			return Ok("".into());
+			return Ok("".into())
 		}
 		let long_lived_associated_assets = unwrapped_associated_assets.clone().unwrap();
 		let associated_asset = long_lived_associated_assets
@@ -532,7 +529,7 @@ impl RPCCalls for MultichainRPCHelper {
 			.find(|i| i.asset_id_on_eth_chain == asset && i.minted_asset == true)
 			.clone();
 		if associated_asset.is_none() {
-			return Err("MultichainRPCHelper, error getting minted asset.");
+			return Err("MultichainRPCHelper, error getting minted asset.")
 		}
 		Ok(associated_asset.unwrap().asset_id.clone())
 	}
@@ -544,7 +541,7 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<AssociatedAsset>>()
 			.map_err(|e| {
 				log::error!("multichain_associated_assets_store {:?}", e);
-				return b"MultichainRPCHelper, error getting assets.";
+				return b"MultichainRPCHelper, error getting assets."
 			})
 			.unwrap()
 			.unwrap();
@@ -564,7 +561,7 @@ impl AssetCollector for MultichainData {
 				Err(e) => {
 					log::info!("Error getting assets, {:?}", e);
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -581,7 +578,7 @@ impl AssetCollector for MultichainData {
 				Err(e) => {
 					// "Error occurred, retrying with the next helper..."
 					log::info!("Error getting get_locked, {:?}", e);
-					continue;
+					continue
 				},
 			}
 		}
@@ -597,7 +594,7 @@ impl AssetCollector for MultichainData {
 				Err(e) => {
 					log::info!("Error getting get_issued, {:?}", e);
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -613,7 +610,7 @@ impl AssetCollector for MultichainData {
 				Err(e) => {
 					log::info!("Error getting get_minted_asset, {:?}", e);
 					// "Error occurred, retrying with the next helper..."
-					continue;
+					continue
 				},
 			}
 		}
@@ -630,7 +627,7 @@ impl AssetCollector for MultichainData {
 				Err(e) => {
 					// "Error occurred, retrying with the next helper..."
 					log::info!("Error getting get_associated_assets, {:?}", e);
-					continue;
+					continue
 				},
 			}
 		}

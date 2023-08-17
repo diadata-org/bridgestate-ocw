@@ -5,11 +5,13 @@ extern crate alloc;
 pub mod helper;
 pub mod impls;
 pub mod interlay;
-pub mod keys;
 pub mod multichain;
 
 use frame_support::{sp_runtime::KeyTypeId, traits::Get};
-use frame_system::offchain::{CreateSignedTransaction, SendSignedTransaction};
+use frame_system::{
+	offchain::{CreateSignedTransaction, SendSignedTransaction},
+	pallet_prelude::BlockNumberFor,
+};
 pub use pallet::*;
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef};
 
@@ -83,7 +85,7 @@ pub mod pallet {
 		/// Specifies the number of blocks during which an action must
 		/// be taken before some consequence is incurred.
 		#[pallet::constant]
-		type GracePeriod: Get<Self::BlockNumber>;
+		type GracePeriod: Get<BlockNumberFor<Self>>;
 
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -163,7 +165,7 @@ pub mod pallet {
 	}
 
 	/// Data associated with an asset.
-	/// Currently, this structure is empty.
+	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
 	pub struct AssetData {}
 
 	#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default, TypeInfo)]
@@ -202,40 +204,47 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn offchain_worker(block_number: T::BlockNumber) {
+		fn offchain_worker(block_number: BlockNumberFor<T>) {
 			Self::start(block_number);
 		}
 	}
 	impl<T: Config> Pallet<T> {
-		pub fn start(block_number: T::BlockNumber) {
+		pub fn start(block_number: BlockNumberFor<T>) {
 			let local_store: StorageValueRef =
 				StorageValueRef::persistent(b"collateral-reader::my-storage");
 
 			const RECENTLY_SENT: () = ();
 
 			let res = local_store.mutate(
-				|last_send: Result<Option<T::BlockNumber>, StorageRetrievalError>| match last_send {
-					Ok(Some(block)) if block_number < block + T::GracePeriod::get() => {
-						Err(RECENTLY_SENT)
-					},
-					_ => Ok(block_number),
+				|last_send: Result<Option<BlockNumberFor<T>>, StorageRetrievalError>| {
+					match last_send {
+						Ok(Some(block)) if block_number < block + T::GracePeriod::get() =>
+							Err(RECENTLY_SENT),
+						_ => Ok(block_number),
+					}
 				},
 			);
 
 			if let Err(MutateStorageError::ValueFunctionFailed(RECENTLY_SENT)) = res {
-				return;
+				return
 			}
 
 			if let Err(MutateStorageError::ConcurrentModification(_)) = res {
-				return;
+				return
 			}
 
 			if let Ok(_) = res {
-				Self::send_transactions();
+				let id: InterlayData = InterlayData {};
+				let md: MultichainData = MultichainData {};
+
+				Self::send_transactions(&id.clone(), &md.clone());
 			}
 		}
 
-		pub fn send_transactions() {
+		pub fn send_transactions(
+			inter: &(impl AssetCollector + Clone),
+			md: &(impl AssetCollector + Clone),
+		) {
 			// let ad: AssetData = AssetData {};
 			// for asset in ad.get_supported_assets() {
 			// 	log::info!("assets: {:?}", asset.symbol);
@@ -245,22 +254,22 @@ pub mod pallet {
 			// 	}
 			// }
 
-			let id: InterlayData = InterlayData {};
-			for asset in id.clone().get_supported_assets() {
+			// let id: InterlayData = InterlayData {};
+			for asset in inter.get_supported_assets() {
 				log::info!("InterlayData: {:?}", asset);
 
 				let asset_stats = AssetStats {
 					asset: asset.symbol.clone(),
-					locked: id.clone().get_locked(asset.clone().symbol),
-					issued: id.clone().get_issued(asset.clone().symbol),
-					minted_asset: id.clone().get_minted_asset(asset.clone().symbol),
+					locked: inter.clone().get_locked(asset.clone().symbol),
+					issued: inter.clone().get_issued(asset.clone().symbol),
+					minted_asset: inter.clone().get_minted_asset(asset.clone().symbol),
 				};
 
 				if let Err(e) = Self::send_signed(asset.clone(), asset_stats.clone()) {
 					log::error!("Failed to submit InterlayData stats for {:?}: {:?}", asset, e);
 				}
 			}
-			let md: MultichainData = MultichainData {};
+			// let md: MultichainData = MultichainData {};
 			for asset in md.get_supported_assets() {
 				let asset_id = asset.symbol.clone();
 				log::info!("assets: {:?}", asset);

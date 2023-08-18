@@ -397,8 +397,8 @@ fn get_assets_stats() -> Result<(), Error> {
 		}
 		let total_issued_amount = get_total_amount(issued_addresses_map);
 		let total_locked_amount = get_total_amount(locked_addresses_map);
-		let tla = total_locked_amount.clone();
-		let tia = total_issued_amount.clone();
+		let tla = total_locked_amount;
+		let tia = total_issued_amount;
 		if tla > 0 && tia > 0 {
 			all_stats.push(MultichainAssetStats {
 				asset_id: asset.symbol.clone(),
@@ -409,8 +409,8 @@ fn get_assets_stats() -> Result<(), Error> {
 			let unwrapped_prev_stats = prev_stats.clone().unwrap();
 			let asset_prev_stats =
 				unwrapped_prev_stats.iter().find(|i| i.asset_id == asset.symbol.clone());
-			if asset_prev_stats.is_some() {
-				all_stats.push(asset_prev_stats.unwrap().clone());
+			if let Some(asset_prev_stats) = asset_prev_stats {
+				all_stats.push(asset_prev_stats.clone());
 			}
 		}
 	}
@@ -528,8 +528,7 @@ impl RPCCalls for MultichainRPCHelper {
 		let long_lived_associated_assets = unwrapped_associated_assets.clone().unwrap();
 		let associated_asset = long_lived_associated_assets
 			.iter()
-			.find(|i| i.asset_id_on_eth_chain == asset && i.minted_asset == true)
-			.clone();
+			.find(|i| i.asset_id_on_eth_chain == asset && i.minted_asset);
 		if associated_asset.is_none() {
 			return Err("MultichainRPCHelper, error getting minted asset.")
 		}

@@ -1,10 +1,9 @@
-pub mod Helper {
+pub mod helper {
 	use crate::alloc::borrow::ToOwned;
 	use frame_support::{StorageHasher, Twox128, Twox64Concat};
 	use scale_info::prelude::{format, string::String, vec};
 	use serde::{Deserialize, Serialize};
-	use serde_json::{json, to_value, Value};
-	use sp_core::storage::StorageKey;
+
 	use sp_runtime::offchain::{http, Duration};
 	use sp_std::vec::Vec;
 
@@ -34,25 +33,6 @@ pub mod Helper {
 			.join("");
 		hex_string
 	}
-
-	// pub fn storage_map_final_key<H: StorageHasher>(
-	//     pallet_prefix: &str,
-	//     map_name: &str,
-	//     key: &[u8],
-	// ) -> StorageKey { let key_hashed = H::hash(key); let pallet_prefix_hashed =
-	//   frame_support::Twox128::hash(pallet_prefix.as_bytes()); let storage_prefix_hashed =
-	//   frame_support::Twox128::hash(map_name.as_bytes());
-
-	//     let mut final_key = Vec::with_capacity(
-	//         pallet_prefix_hashed.len() + storage_prefix_hashed.len() + key_hashed.as_ref().len(),
-	//     );
-
-	//     final_key.extend_from_slice(&pallet_prefix_hashed[..]);
-	//     final_key.extend_from_slice(&storage_prefix_hashed[..]);
-	//     final_key.extend_from_slice(key_hashed.as_ref());
-
-	//     StorageKey(final_key)
-	// }
 
 	pub fn generate_double_storage_key(
 		module_prefix: &str,
@@ -91,7 +71,7 @@ pub mod Helper {
 		storage_key
 	}
 
-	pub fn fetch_data(method: &str, param: &str) -> Result<Vec<u8>, http::Error> {
+	pub fn fetch_data(_method: &str, param: &str) -> Result<Vec<u8>, http::Error> {
 		let rpc_url = "https://interlay.api.onfinality.io/public";
 		let mut rpc_request = "{
             \"jsonrpc\": \"2.0\",
@@ -130,14 +110,6 @@ pub mod Helper {
 		log::info!("body_str: {:?}", body_str);
 
 		Ok(body)
-	}
-
-	fn json_req<S: Serialize>(method: &str, params: S, id: u32) -> Value {
-		json!({
-			"method": method,
-			"params": params,
-			"jsonrpc": "2.0",
-		})
 	}
 
 	pub fn hex_to_balance(hex: &str) -> u128 {
@@ -186,7 +158,7 @@ pub mod Helper {
 					None => log::error!("Result is null"),
 				}
 			},
-			Err(e) => {
+			Err(_e) => {
 				log::error!("HTTP error: ");
 			},
 		};
@@ -230,7 +202,7 @@ pub mod Helper {
 					None => log::error!("Result is null"),
 				}
 			},
-			Err(e) => {
+			Err(_e) => {
 				log::error!("HTTP error: ");
 			},
 		};

@@ -99,7 +99,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<Asset>` holding all supported assets.
-		fn get_supported_assets(&self) -> Vec<Asset>;
+		fn supported_assets(&self) -> Vec<Asset>;
 
 		/// Returns the amount of the specified asset that is currently locked.
 		///
@@ -110,7 +110,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `u64` value representing the amount of the asset that is locked.
-		fn get_locked(self, asset: Vec<u8>) -> u128;
+		fn locked(self, asset: Vec<u8>) -> u128;
 
 		/// Returns the total issued amount of the specified asset.
 		///
@@ -121,7 +121,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `u64` value representing the total issued amount of the asset.
-		fn get_issued(self, asset: Vec<u8>) -> u128;
+		fn issued(self, asset: Vec<u8>) -> u128;
 
 		/// Returns the minted asset associated with the specified asset.
 		///
@@ -132,7 +132,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<u8>` representing the minted asset associated with the input asset.
-		fn get_minted_asset(self, asset: Vec<u8>) -> Vec<u8>;
+		fn minted_asset(self, asset: Vec<u8>) -> Vec<u8>;
 
 		/// Returns the assets associated with the specified minted asset.
 		///
@@ -143,7 +143,7 @@ pub mod pallet {
 		/// # Returns
 		///
 		/// A `Vec<u8>` representing the assets associated with the minted asset.
-		fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8>;
+		fn associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8>;
 	}
 
 	/// Represents an asset in the system.
@@ -245,39 +245,28 @@ pub mod pallet {
 			inter: &(impl AssetCollector + Clone),
 			md: &(impl AssetCollector + Clone),
 		) {
-			// let ad: AssetData = AssetData {};
-			// for asset in ad.get_supported_assets() {
-			// 	log::info!("assets: {:?}", asset.symbol);
-
-			// 	if let Err(e) = Self::send_signed(asset.clone()) {
-			// 		log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
-			// 	}
-			// }
-
-			// let id: InterlayData = InterlayData {};
-			for asset in inter.get_supported_assets() {
+			for asset in inter.supported_assets() {
 				log::info!("InterlayData: {:?}", asset);
 
 				let asset_stats = AssetStats {
 					asset: asset.symbol.clone(),
-					locked: inter.clone().get_locked(asset.clone().symbol),
-					issued: inter.clone().get_issued(asset.clone().symbol),
-					minted_asset: inter.clone().get_minted_asset(asset.clone().symbol),
+					locked: inter.clone().locked(asset.clone().symbol),
+					issued: inter.clone().issued(asset.clone().symbol),
+					minted_asset: inter.clone().minted_asset(asset.clone().symbol),
 				};
 
 				if let Err(e) = Self::send_signed(asset.clone(), asset_stats.clone()) {
 					log::error!("Failed to submit InterlayData stats for {:?}: {:?}", asset, e);
 				}
 			}
-			// let md: MultichainData = MultichainData {};
-			for asset in md.get_supported_assets() {
+			for asset in md.supported_assets() {
 				let asset_id = asset.symbol.clone();
 				log::info!("assets: {:?}", asset);
 				let asset_stats = AssetStats {
 					asset: asset_id.clone(),
-					locked: md.clone().get_locked(asset_id.clone()),
-					issued: md.clone().get_issued(asset_id.clone()),
-					minted_asset: md.clone().get_minted_asset(asset_id.clone()),
+					locked: md.clone().locked(asset_id.clone()),
+					issued: md.clone().issued(asset_id.clone()),
+					minted_asset: md.clone().minted_asset(asset_id.clone()),
 				};
 				if let Err(e) = Self::send_signed_multichain(asset.clone(), asset_stats) {
 					log::error!("Failed to submit asset stats for {:?}: {:?}", asset, e);
@@ -287,7 +276,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn get_asset_stats)]
+	#[pallet::getter(fn asset_stats)]
 	pub(super) type AssetStatsStorage<T: Config> =
 		StorageMap<_, Blake2_128Concat, BoundedVec<u8, T::MaxVec>, AssetStats, OptionQuery>;
 

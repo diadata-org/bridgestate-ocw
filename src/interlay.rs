@@ -1,6 +1,6 @@
 use crate::{Asset, AssetCollector, InterlayData};
 
-use crate::impls::{RPCCalls, RPCHelper1, RPCHelper2};
+use crate::impls::{RPCCalls, RPCHelper1};
 
 use serde::{Deserialize, Serialize};
 
@@ -10,8 +10,9 @@ use scale_info::prelude::string::String;
 
 use sp_std::{boxed::Box, str, vec, vec::Vec};
 
-use crate::helper::Helper;
+use crate::helper::helper;
 
+/// Represents a JSON-RPC response structure.
 #[derive(Serialize, Deserialize)]
 struct RpcResponse {
 	jsonrpc: String,
@@ -19,10 +20,12 @@ struct RpcResponse {
 	id: String,
 }
 
+/// Helper implementation for making RPC calls specific to Interlay.
 pub struct InterlayRPCHelper1 {}
 
 impl RPCCalls for InterlayRPCHelper1 {
-	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
+	/// Get the list of supported assets on Interlay.
+	fn supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
 		let mut assets: Vec<Asset> = Vec::new();
 		assets.push(Asset {
 			address: b"2".to_vec(),
@@ -31,28 +34,24 @@ impl RPCCalls for InterlayRPCHelper1 {
 			decimals: 0,
 			symbol: b"DOT".to_vec(),
 			name: b"DOT".to_vec(),
-			// storage_key:
-			// b"0x99971b5749ac43e0235e41b0d378691857c875e4cff74148e4628f264b974c80d67c5ba80ba065480001".to_vec()
 		});
 
 		Ok(assets)
 	}
-
-	fn get_locked(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
+	/// Get the locked amount of a specific asset on Interlay.
+	fn locked(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
 		log::info!("calling get_locked");
 
 		let module_name = "Tokens";
 		let storage_name = "TotalIssuance";
 
-		// let storage_key: Vec<u8> = Helper::generate_storage_key(module_name, storage_name);
+		let storage_key = helper::generate_storage_key(module_name, &storage_name);
 
-		let storage_key = Helper::generate_storage_key(module_name, &storage_name);
-
-		let mut storage_key_hash = Helper::to_hex(storage_key);
+		let mut storage_key_hash = helper::to_hex(storage_key);
 
 		storage_key_hash = "0x".to_owned() + &storage_key_hash + "d67c5ba80ba065480001";
 
-		let result = Helper::fetch_data("state_getKeys", &storage_key_hash);
+		let result = helper::fetch_data("state_getKeys", &storage_key_hash);
 		let mut locked = 0;
 		match result {
 			Ok(bytes) => {
@@ -66,14 +65,14 @@ impl RPCCalls for InterlayRPCHelper1 {
 						log::error!("Result: {}", res);
 						let stripped_string = res.strip_prefix("0x").unwrap_or(&res);
 
-						locked = Helper::hex_to_balance(&stripped_string);
+						locked = helper::hex_to_balance(&stripped_string);
 
 						log::info!("Result: locked {}", locked)
 					},
 					None => log::error!("Result is null"),
 				}
 			},
-			Err(e) => {
+			Err(_e) => {
 				log::error!("HTTP error: ");
 			},
 		};
@@ -81,44 +80,49 @@ impl RPCCalls for InterlayRPCHelper1 {
 		Ok(locked)
 	}
 
-	fn get_issued(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
-		let issued_dot = Helper::total_user_vault_collateral("DOT");
-		let issued_usdt = Helper::total_user_vault_collateral("USDT");
+	/// Get the issued amount of a specific asset on Interlay.
+	fn issued(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
+		let issued_dot = helper::total_user_vault_collateral("DOT");
+		let issued_usdt = helper::total_user_vault_collateral("USDT");
 
 		log::info!("Issued dot: {}", issued_dot);
 		log::info!("Issued usdt: {}", issued_usdt);
 
-		let oracle_dot: u128 = Helper::oracle("DOT");
+		let oracle_dot: u128 = helper::oracle("DOT");
 
-		let oracle_usdt: u128 = Helper::oracle("USDT");
+		let oracle_usdt: u128 = helper::oracle("USDT");
 
 		log::info!("oracle dot: {}", oracle_dot);
 		log::info!("oracle usdt: {}", oracle_usdt);
 
-		log::info!("baclkable dot: {}", issued_dot / (oracle_dot / 100000000000000000000));
-		log::info!("baclkable usdt: {}", issued_usdt / (oracle_usdt / 100000000000000000000));
+		log::info!("backable dot: {}", issued_dot / (oracle_dot / 100000000000000000000));
+		log::info!("backable usdt: {}", issued_usdt / (oracle_usdt / 100000000000000000000));
 
 		let total_backable = issued_dot / (oracle_dot / 100000000000000000000) +
 			issued_usdt / (oracle_usdt / 100000000000000000000);
 
 		Ok(total_backable / 100)
 	}
-
-	fn get_minted_asset(&self, _asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
+	/// Get the minted asset on Interlay.
+	fn minted_asset(&self, _asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
 		Ok(b"IBTC".to_vec())
 	}
-
-	fn get_associated_assets(&self, _minted_asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
-		Ok(b"DOT".to_vec())
+	/// Get the associated assets for a minted asset on Interlay.
+	fn associated_assets(&self, minted_asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
+		match minted_asset.as_slice() {
+			b"IBTC" => Ok(b"DOT".to_vec()),
+			_ => Err("Minted asset not recognized"),
+		}
 	}
 }
 
 impl AssetCollector for InterlayData {
-	fn get_supported_assets(&self) -> Vec<Asset> {
+	/// Get the list of supported assets using available RPC helpers.
+	fn supported_assets(&self) -> Vec<Asset> {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(InterlayRPCHelper1 {})];
 
 		for helper in helpers {
-			let result = helper.get_supported_assets();
+			let result = helper.supported_assets();
 			match result {
 				Ok(assets) => return assets,
 				Err(_e) => {
@@ -129,15 +133,14 @@ impl AssetCollector for InterlayData {
 		}
 		vec![Asset::default()]
 	}
+	/// Get the locked amount of an asset using available RPC helpers.
 
-	fn get_locked(self, asset: Vec<u8>) -> u128 {
-		log::info!("calling get_locked    ----");
-
+	fn locked(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> =
 			vec![Box::new(InterlayRPCHelper1 {}), Box::new(InterlayRPCHelper1 {})];
 
 		for helper in helpers {
-			let result = helper.get_locked(asset.clone());
+			let result = helper.locked(asset.clone());
 			match result {
 				Ok(locked) => return locked,
 				Err(_e) => {
@@ -148,11 +151,13 @@ impl AssetCollector for InterlayData {
 		}
 		0
 	}
-	fn get_issued(self, asset: Vec<u8>) -> u128 {
+	/// Get the issued amount of an asset using available RPC helpers.
+
+	fn issued(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(InterlayRPCHelper1 {})];
 
 		for helper in helpers {
-			let result = helper.get_issued(asset.clone());
+			let result = helper.issued(asset.clone());
 			match result {
 				Ok(issued) => return issued,
 				Err(_e) => {
@@ -163,11 +168,13 @@ impl AssetCollector for InterlayData {
 		}
 		0
 	}
-	fn get_minted_asset(self, asset: Vec<u8>) -> Vec<u8> {
+	/// Get the minted asset using available RPC helpers.
+
+	fn minted_asset(self, asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(InterlayRPCHelper1 {})];
 
 		for helper in helpers {
-			let result = helper.get_minted_asset(asset.clone());
+			let result = helper.minted_asset(asset.clone());
 			match result {
 				Ok(mintedasset) => return mintedasset,
 				Err(_e) => {
@@ -179,12 +186,13 @@ impl AssetCollector for InterlayData {
 		vec![0]
 	}
 
-	fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
+	/// Get the associated assets for a minted asset using available RPC helpers.
+	fn associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> =
 			vec![Box::new(RPCHelper1 {}), Box::new(InterlayRPCHelper1 {})];
 
 		for helper in helpers {
-			let result = helper.get_associated_assets(minted_asset.clone());
+			let result = helper.associated_assets(minted_asset.clone());
 			match result {
 				Ok(assets) => return assets,
 				Err(_e) => {

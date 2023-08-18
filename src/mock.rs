@@ -1,26 +1,17 @@
 use crate as pallet_template;
 use crate as pallet_collateral_reader;
-use crate::{Asset, AssetCollector, InterlayData};
+use crate::{Asset, AssetCollector};
 use frame_support::traits::{ConstU16, ConstU32, ConstU64};
-use frame_system as system;
+
 use sp_core::{offchain::testing::TestTransactionPoolExt, H256};
 use sp_runtime::{
-	testing::Header,
 	traits,
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
 
 pub struct MockInterlayData;
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	traits::{
-		AccountIdConversion, AccountIdLookup, IdentifyAccount, NumberFor, One, SaturatedConversion,
-		StaticLookup, Verify,
-	},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
-};
+use sp_runtime::traits::{IdentifyAccount, Verify};
 
 use sp_runtime::{testing::TestXt, traits::Extrinsic as ExtrinsicT, RuntimeAppPublic};
 
@@ -128,7 +119,7 @@ pub fn new_offchain_test_ext(pool: TestTransactionPoolExt) -> sp_io::TestExterna
 }
 
 impl AssetCollector for MockInterlayData {
-	fn get_supported_assets(&self) -> Vec<Asset> {
+	fn supported_assets(&self) -> Vec<Asset> {
 		// Return a mock list of supported assets
 		vec![
 			Asset {
@@ -143,22 +134,22 @@ impl AssetCollector for MockInterlayData {
 		]
 	}
 
-	fn get_locked(self, _asset: Vec<u8>) -> u128 {
+	fn locked(self, _asset: Vec<u8>) -> u128 {
 		// Return a mock locked amount
 		123
 	}
 
-	fn get_issued(self, _asset: Vec<u8>) -> u128 {
+	fn issued(self, _asset: Vec<u8>) -> u128 {
 		// Return a mock issued amount
 		456
 	}
 
-	fn get_minted_asset(self, _asset: Vec<u8>) -> Vec<u8> {
+	fn minted_asset(self, _asset: Vec<u8>) -> Vec<u8> {
 		// Return a mock minted asset
 		vec![4, 5, 6]
 	}
 
-	fn get_associated_assets(self, _minted_asset: Vec<u8>) -> Vec<u8> {
+	fn associated_assets(self, _minted_asset: Vec<u8>) -> Vec<u8> {
 		// Return a mock associated asset
 		vec![7, 8, 9]
 	}

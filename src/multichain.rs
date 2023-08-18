@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 use sp_runtime::offchain::{http::Request, storage::StorageValueRef, Duration};
 use sp_std::{boxed::Box, collections::btree_map::BTreeMap, str, vec, vec::Vec};
 
+// Extract constants into named values
 const FETCH_TIMEOUT_PERIOD: u64 = 5_000; // in milli-seconds
 const RPC_FETCH_TIMEOUT_PERIOD: u64 = 5_000; // in milli-seconds
 
+// Extract storage keys into constants
 const CHAINS_STORAGE_KEY: &[u8] = b"collateral-reader::multichain-chains-store";
 const ASSETS_STORAGE_KEY: &[u8] = b"collateral-reader::multichain-assets-store";
 const ASSOCIATED_ASSETS_STORAGE_KEY: &[u8] =
@@ -189,7 +191,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 		let whitelisted_asset_symbols: Vec<&str> =
 			vec!["ETH", "WETH", "WBTC", "USDC", "USDT", "DAI"];
 		for (_, value) in response.iter() {
-			let symbol = &value.symbol.as_str().clone();
+			let symbol = &value.symbol.as_str();
 			if !whitelisted_asset_symbols.contains(&symbol) {
 				continue
 			}
@@ -456,7 +458,7 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 pub struct MultichainRPCHelper {}
 
 impl RPCCalls for MultichainRPCHelper {
-	fn get_supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
+	fn supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
 		let assets = get_assets();
 		if let Err(_e) = assets {
 			return Err("MultichainRPC, error getting supported assets.")
@@ -464,7 +466,7 @@ impl RPCCalls for MultichainRPCHelper {
 		Ok(assets.unwrap())
 	}
 
-	fn get_locked(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
+	fn locked(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
 		get_assets_stats_job();
 		let multichain_stats_store: StorageValueRef =
 			StorageValueRef::persistent(STATS_STORAGE_KEY);
@@ -486,7 +488,7 @@ impl RPCCalls for MultichainRPCHelper {
 		Ok(asset_stats.unwrap().locked)
 	}
 
-	fn get_issued(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
+	fn issued(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
 		get_assets_stats_job();
 		let multichain_stats_store: StorageValueRef =
 			StorageValueRef::persistent(STATS_STORAGE_KEY);
@@ -508,7 +510,7 @@ impl RPCCalls for MultichainRPCHelper {
 		Ok(asset_stats.unwrap().issued)
 	}
 
-	fn get_minted_asset(&self, asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
+	fn minted_asset(&self, asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
 		let multichain_associated_assets_store: StorageValueRef =
 			StorageValueRef::persistent(ASSOCIATED_ASSETS_STORAGE_KEY);
 		let associated_assets =
@@ -534,7 +536,7 @@ impl RPCCalls for MultichainRPCHelper {
 		Ok(associated_asset.unwrap().asset_id.clone())
 	}
 
-	fn get_associated_assets(&self, minted_asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
+	fn associated_assets(&self, minted_asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
 		let multichain_associated_assets_store: StorageValueRef =
 			StorageValueRef::persistent(ASSOCIATED_ASSETS_STORAGE_KEY);
 		let all_associated_assets = multichain_associated_assets_store
@@ -551,11 +553,11 @@ impl RPCCalls for MultichainRPCHelper {
 }
 
 impl AssetCollector for MultichainData {
-	fn get_supported_assets(&self) -> Vec<Asset> {
+	fn supported_assets(&self) -> Vec<Asset> {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(MultichainRPCHelper {})];
 
 		for helper in helpers {
-			let result = helper.get_supported_assets();
+			let result = helper.supported_assets();
 			match result {
 				Ok(assets) => return assets,
 				Err(e) => {
@@ -568,11 +570,11 @@ impl AssetCollector for MultichainData {
 		vec![]
 	}
 
-	fn get_locked(self, asset: Vec<u8>) -> u128 {
+	fn locked(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(MultichainRPCHelper {})];
 
 		for helper in helpers {
-			let result = helper.get_locked(asset.clone());
+			let result = helper.locked(asset.clone());
 			match result {
 				Ok(locked) => return locked,
 				Err(e) => {
@@ -584,11 +586,11 @@ impl AssetCollector for MultichainData {
 		}
 		0
 	}
-	fn get_issued(self, asset: Vec<u8>) -> u128 {
+	fn issued(self, asset: Vec<u8>) -> u128 {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(MultichainRPCHelper {})];
 
 		for helper in helpers {
-			let result = helper.get_issued(asset.clone());
+			let result = helper.issued(asset.clone());
 			match result {
 				Ok(issued) => return issued,
 				Err(e) => {
@@ -600,11 +602,11 @@ impl AssetCollector for MultichainData {
 		}
 		0
 	}
-	fn get_minted_asset(self, asset: Vec<u8>) -> Vec<u8> {
+	fn minted_asset(self, asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(MultichainRPCHelper {})];
 
 		for helper in helpers {
-			let result = helper.get_minted_asset(asset.clone());
+			let result = helper.minted_asset(asset.clone());
 			match result {
 				Ok(mintedasset) => return mintedasset,
 				Err(e) => {
@@ -617,11 +619,11 @@ impl AssetCollector for MultichainData {
 		vec![0]
 	}
 
-	fn get_associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
+	fn associated_assets(self, minted_asset: Vec<u8>) -> Vec<u8> {
 		let helpers: Vec<Box<dyn RPCCalls>> = vec![Box::new(MultichainRPCHelper {})];
 
 		for helper in helpers {
-			let result = helper.get_associated_assets(minted_asset.clone());
+			let result = helper.associated_assets(minted_asset.clone());
 			match result {
 				Ok(assets) => return assets,
 				Err(e) => {

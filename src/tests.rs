@@ -1,4 +1,8 @@
-use crate::mock::{new_test_ext, RuntimeEvent, *};
+use crate::{
+	helper::helper,
+	mock::{new_test_ext, RuntimeEvent, *},
+};
+use frame_support::assert_ok;
 
 use super::{AssetData, AssetStats};
 use crate::{mock::MockInterlayData, pallet::AssetCollector};
@@ -39,10 +43,14 @@ fn test_save_asset_event() {
 		let token_clone = token.clone();
 		let asset_stats =
 			AssetStats { asset: b"".to_vec(), locked: 0, issued: 0, minted_asset: b"".to_vec() };
-		TemplateModule::save_asset_stats(origin.into(), token_clone, asset_stats.clone());
+		assert_ok!(TemplateModule::save_asset_stats(
+			origin.into(),
+			token_clone,
+			asset_stats.clone()
+		));
 
 		// Ensure the event was emitted
-		let expected_token = token.clone();
+		let _expected_token = token.clone();
 		let expected_who = alice.public().clone();
 		assert!(System::events().iter().any(|record| match &record.event {
 			RuntimeEvent::TemplateModule(crate::Event::AssetUpdated {
@@ -60,55 +68,112 @@ fn save_asset_stats_works() {
 		let token: BoundedVec<u8, ConstU32<100>> = BoundedVec::default();
 		let alice = AccountKeyring::Alice.pair();
 		let origin = frame_system::RawOrigin::Signed(alice.public());
-		let mut asset_stats = AssetStats {
+		let asset_stats = AssetStats {
 			asset: token.clone().to_vec(),
 			locked: 44,
 			issued: 2,
 			minted_asset: b"LDOT".to_vec(),
 		};
 
-		TemplateModule::save_asset_stats(origin.into(), token.clone(), asset_stats.clone());
+		assert_ok!(TemplateModule::save_asset_stats(
+			origin.into(),
+			token.clone(),
+			asset_stats.clone()
+		));
 
-		assert_eq!(TemplateModule::get_asset_stats(token.clone()), Some(asset_stats));
+		assert_eq!(TemplateModule::asset_stats(token.clone()), Some(asset_stats));
 	});
 }
 
 #[test]
-fn test_get_supported_assets() {
+fn test_supported_assets() {
 	let interlay_data = MockInterlayData {}; // Instantiate your data source
-	let assets = interlay_data.get_supported_assets();
+	let assets = interlay_data.supported_assets();
 	assert_eq!(assets.len(), 1); // Assuming the mock implementation returns 1 asset
 	                         // Add more assertions if necessary
 }
 
 #[test]
-fn test_get_locked() {
+fn test_locked() {
 	let interlay_data = MockInterlayData {};
 	let asset = vec![1, 2, 3];
-	let locked = interlay_data.get_locked(asset.clone());
+	let locked = interlay_data.locked(asset.clone());
 	assert_eq!(locked, 123);
 }
 
 #[test]
-fn test_get_issued() {
+fn test_issued() {
 	let interlay_data = MockInterlayData {};
 	let asset = vec![1, 2, 3];
-	let issued = interlay_data.get_issued(asset.clone());
+	let issued = interlay_data.issued(asset.clone());
 	assert_eq!(issued, 456);
 }
 
 #[test]
-fn test_get_minted_asset() {
+fn test_minted_asset() {
 	let interlay_data = MockInterlayData {};
 	let asset = vec![1, 2, 3];
-	let minted_asset = interlay_data.get_minted_asset(asset.clone());
+	let minted_asset = interlay_data.minted_asset(asset.clone());
 	assert_eq!(minted_asset, vec![4, 5, 6]);
 }
 
 #[test]
-fn test_get_associated_assets() {
+fn test_associated_assets() {
 	let interlay_data = MockInterlayData {};
 	let minted_asset = vec![4, 5, 6];
-	let associated_assets = interlay_data.get_associated_assets(minted_asset.clone());
+	let associated_assets = interlay_data.associated_assets(minted_asset.clone());
 	assert_eq!(associated_assets, vec![7, 8, 9]);
+}
+
+#[test]
+fn test_generate_storage_key() {
+	let module_prefix = "Module";
+	let storage_item_prefix = "StorageItem";
+
+	let storage_key = helper::generate_storage_key(module_prefix, storage_item_prefix);
+
+	assert_eq!(storage_key.len(), 32);
+	let hex_string = helper::to_hex(storage_key.clone());
+	assert_eq!(hex_string, "f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b");
+}
+
+#[test]
+fn test_to_hex() {
+	let storage_key = vec![0x12, 0x34, 0x56, 0x78];
+	let hex_string = helper::to_hex(storage_key.clone());
+
+	assert_eq!(hex_string, "12345678");
+}
+
+#[test]
+fn test_generate_double_storage_key() {
+	let module_prefix = "Module";
+	let storage_item_prefix = "StorageItem";
+	let id = "123";
+
+	let storage_key = helper::generate_double_storage_key(module_prefix, storage_item_prefix, id);
+
+	assert_eq!(storage_key.len(), 43);
+
+	let hex_string = helper::to_hex(storage_key.clone());
+	assert_eq!(
+		hex_string,
+		"f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b85e8a73f227d693c313233"
+	);
+}
+
+#[test]
+fn test_generate_double_storage_keys() {
+	let module_prefix = "Module";
+	let storage_item_prefix = "StorageItem";
+	let key1 = "Key1";
+	let key2 = "Key2";
+
+	let storage_key =
+		helper::generate_double_storage_keys(module_prefix, storage_item_prefix, key1, key2);
+
+	assert_eq!(storage_key.len(), 56);
+
+	let hex_string = helper::to_hex(storage_key.clone());
+	assert_eq!(hex_string, "f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b4d26e586dc10a1bc4b65793157f7f2fb894dfd264b657932");
 }

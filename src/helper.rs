@@ -71,6 +71,21 @@ pub mod helper {
 		storage_key
 	}
 
+	//
+	/// This function sends an HTTP POST request to the specified JSON-RPC endpoint with the given
+	/// method and parameter. The response body is collected as a vector of bytes and returned as
+	/// the result. The function uses the `http` crate for sending and receiving HTTP requests.
+	///
+	/// # Arguments
+	///
+	/// - `_method`: A string representing the JSON-RPC method to be invoked (not used in the
+	///   function).
+	/// - `param`: A string representing the parameter to be passed to the JSON-RPC method.
+	///
+	/// # Returns
+	///
+	/// A `Result` containing the response body as a vector of bytes if successful, or an
+	/// `http::Error` if an error occurs during the HTTP request.
 	pub fn fetch_data(_method: &str, param: &str) -> Result<Vec<u8>, http::Error> {
 		let rpc_url = "https://interlay.api.onfinality.io/public";
 		let mut rpc_request = "{
@@ -112,6 +127,17 @@ pub mod helper {
 		Ok(body)
 	}
 
+	/// Convert a hexadecimal string representation to a little-endian `u128` balance.
+	///
+	/// This function takes a hexadecimal string representation and converts it to a `u128` balance,
+	///
+	/// # Arguments
+	///
+	/// - `hex`: A string representing the hexadecimal value to be converted.
+	///
+	/// # Returns
+	///
+	/// The equivalent `u128` balance value in little-endian byte order.
 	pub fn hex_to_balance(hex: &str) -> u128 {
 		// let hex: &str = "70ce0360818118000000000000000000";
 		let big_endian_value: u128 = u128::from_str_radix(hex, 16).unwrap();
@@ -120,6 +146,22 @@ pub mod helper {
 		let little_endian_value = big_endian_value.swap_bytes();
 		little_endian_value
 	}
+
+	/// Query the total collateral locked by a user in the vault registry for a specific token.
+	///
+	/// This function queries the vault registry to fetch the total collateral locked by a user
+	/// for a specified token, such as "DOT". It constructs the appropriate storage key for the
+	/// vault registry storage and then fetches the corresponding data using the Substrate RPC.
+	/// The fetched data is then parsed to obtain the total collateral locked by the user.
+	///
+	/// # Arguments
+	///
+	/// - `token`: A string representing the token for which the total user vault collateral is
+	///   queried.
+	///
+	/// # Returns
+	///
+	/// The total collateral locked by the user for the specified token as a `u128`.
 
 	pub fn total_user_vault_collateral(token: &str) -> u128 {
 		log::info!("calling total_user_vault_collateral");
@@ -165,6 +207,21 @@ pub mod helper {
 		locked
 	}
 
+	/// Query the oracle to fetch the total locked amount of a specific token.
+	///
+	/// This function queries the oracle to fetch the total locked amount of a specified token,
+	/// such as "DOT". It constructs the appropriate storage key for the oracle storage and
+	/// then fetches the corresponding data using the Substrate RPC. The fetched data is then
+	/// parsed to obtain the total locked amount.
+	///
+	/// # Arguments
+	///
+	/// - `token`: A string representing the token for which the total locked amount is queried.
+	///
+	/// # Returns
+	///
+	/// The total locked amount of the specified token as a `u128`.
+
 	pub fn oracle(token: &str) -> u128 {
 		log::info!("calling total_user_vault_collateral");
 		let module_name = "Oracle";
@@ -207,5 +264,30 @@ pub mod helper {
 			},
 		};
 		locked
+	}
+
+	/// Crop the letters from the input string starting from the given position.
+	///
+	/// # Arguments
+	///
+	/// * `s` - The input string to crop.
+	/// * `pos` - The position from which to start cropping.
+	///
+	/// # Returns
+	///
+	/// A new string containing the cropped letters.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// let cropped = crop_letters("Hello, world!", 7);
+	/// assert_eq!(cropped, "world!");
+	/// ```
+
+	pub fn crop_letters(s: &str, pos: usize) -> &str {
+		match s.char_indices().skip(pos).next() {
+			Some((pos, _)) => &s[pos..],
+			None => "",
+		}
 	}
 }

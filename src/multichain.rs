@@ -1,4 +1,4 @@
-use crate::{impls::RPCCalls, Asset, AssetCollector, MultichainData};
+use crate::{helper::helper, impls::RPCCalls, Asset, AssetCollector, MultichainData};
 use codec::{Decode, Encode};
 use frame_support::RuntimeDebug;
 use scale_info::prelude::string::String;
@@ -18,11 +18,16 @@ const ASSOCIATED_ASSETS_STORAGE_KEY: &[u8] =
 const STATS_STORAGE_KEY: &[u8] = b"collateral-reader::multichain-stats-store";
 const WORK_IN_PROGRESS_STORAGE_KEY: &[u8] = b"collateral-reader::multichain-work-in-progress";
 
+/// Type alias for an asset identifier represented as a byte vector.
 type AssetId = Vec<u8>;
+
+/// Type alias for a chain identifier represented as a byte vector.
 type ChainId = Vec<u8>;
 
+/// The Ethereum chain identifier as a byte slice.
 const ETH_CHAIN_ID: &[u8] = b"1";
 
+/// Represents a blockchain network or chain.
 #[derive(Clone, Serialize, Deserialize, Encode, Decode, Default, RuntimeDebug)]
 pub struct Chain {
 	id: ChainId,
@@ -30,6 +35,7 @@ pub struct Chain {
 	rpc: Vec<u8>,
 }
 
+/// Represents an associated asset in the multichain system.
 #[derive(Serialize, Deserialize, Encode, Decode, Default, RuntimeDebug)]
 #[serde(rename_all = "camelCase")]
 struct MultichainTokenAssociatedAssetOnAnotherChain {
@@ -62,12 +68,14 @@ struct MultichainToken {
 	dest_chains: BTreeMap<String, BTreeMap<String, MultichainTokenAssociatedAssetOnAnotherChain>>,
 }
 
+/// Represents a JSON_RPC response .
 #[derive(Serialize, Deserialize, Encode, Decode, Default, RuntimeDebug)]
 struct ChainResponse {
 	name: String,
 	rpc: String,
 }
 
+/// Represents an associated asset with related information.
 #[derive(Clone, Encode, Decode, Debug)]
 struct AssociatedAsset {
 	asset_id_on_eth_chain: AssetId,
@@ -86,6 +94,7 @@ struct MultichainAssetStats {
 	issued: u128,
 }
 
+/// Represents a Balance RPC request.
 #[derive(Serialize, Deserialize, Clone)]
 struct BalanceRpc {
 	jsonrpc: String,
@@ -94,22 +103,17 @@ struct BalanceRpc {
 	id: String,
 }
 
+/// Represents a Balance RPC response.
 #[derive(Serialize, Deserialize, Clone)]
 struct BalanceRpcResponse {
 	result: String,
 }
 
+/// Represents parameters for the Balance RPC request.
 #[derive(Serialize, Deserialize, Clone)]
 struct BalanceParams {
 	to: String,
 	data: String,
-}
-
-fn crop_letters(s: &str, pos: usize) -> &str {
-	match s.char_indices().skip(pos).next() {
-		Some((pos, _)) => &s[pos..],
-		None => "",
-	}
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +125,10 @@ pub enum Error {
 	GetAssetsStatsError,
 }
 
+/// Perform the assets statistics job if no work is in progress.
+///
+/// This function checks if there is any ongoing work for asset statistics retrieval
+/// and if not, initiates the job to fetch asset statistics.
 pub fn get_assets_stats_job() {
 	let work_in_progress_storage: StorageValueRef =
 		StorageValueRef::persistent(WORK_IN_PROGRESS_STORAGE_KEY);
@@ -134,6 +142,18 @@ pub fn get_assets_stats_job() {
 		work_in_progress_storage.set(&false);
 	}
 }
+
+/// Retrieve the list of chains and their details.
+///
+/// This function attempts to fetch the list of chains and
+/// their details from a remote API. If the information is already stored in the
+/// local storage, it returns that data. Otherwise, it fetches the data from the
+/// remote API and stores it in the local storage before returning.
+///
+/// # Returns
+///
+/// - `Ok(Vec<Chain>)`: A vector of `Chain` structs representing the multichain networks.
+/// - `Err(Error)`: An error indicating failure to fetch or deserialize the chain data.
 
 fn get_chains() -> Result<Vec<Chain>, Error> {
 	let multichain_chains_store: StorageValueRef = StorageValueRef::persistent(CHAINS_STORAGE_KEY);
@@ -164,6 +184,18 @@ fn get_chains() -> Result<Vec<Chain>, Error> {
 		Ok(chains)
 	}
 }
+
+/// Retrieve the list of assets and associated assets from the multichain network.
+///
+/// This function attempts to fetch the list of assets and their associated assets
+/// from a remote API. If the information is already stored in the local storage,
+/// it returns that data. Otherwise, it fetches the data from the remote API,
+/// processes it, and stores it in the local storage before returning.
+///
+/// # Returns
+///
+/// - `Ok(Vec<Asset>)`: A vector of `Asset` structs representing the assets.
+/// - `Err(Error)`: An error indicating failure to fetch, deserialize, or process asset data.
 
 fn get_assets() -> Result<Vec<Asset>, Error> {
 	let chains = get_chains();
@@ -242,6 +274,19 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 	}
 }
 
+/// Perform an HTTP GET request to the specified URL and return the response body as a vector of
+/// bytes.
+///
+/// # Arguments
+///
+/// - `url`: The URL to which the HTTP GET request should be made.
+///
+/// # Returns
+///
+/// - `Ok(Vec<u8>)`: A vector of bytes representing the response body.
+/// - `Err(Error)`: An error indicating failure in making the HTTP request or processing the
+///   response.
+
 fn call_api(url: &str) -> Result<Vec<u8>, Error> {
 	let request = Request::get(url);
 
@@ -281,6 +326,19 @@ fn call_api(url: &str) -> Result<Vec<u8>, Error> {
 	Ok(resp_bytes)
 }
 
+/// Perform an RPC request to retrieve the ERC-20 token balance using the specified parameters.
+///
+/// # Arguments
+///
+/// - `url`: The URL to which the RPC request should be made.
+/// - `method`: The RPC method name.
+/// - `params`: The parameters to include in the RPC request.
+///
+/// # Returns
+///
+/// - `Ok(Vec<u8>)`: A vector of bytes representing the response body of the RPC request.
+/// - `Err(Error)`: An error indicating failure in making the RPC request or processing the
+///   response.
 fn get_erc20_token_balance(
 	url: &str,
 	method: String,
@@ -334,6 +392,15 @@ fn get_erc20_token_balance(
 	Ok(resp_bytes)
 }
 
+/// Retrieve and store statistics for the associated assets.
+///
+/// This function fetches associated assets' statistics, calculates the total locked and issued
+/// amounts for each asset, and stores the statistics for further use.
+///
+/// # Returns
+///
+/// - `Ok(())`: If the function successfully retrieves and stores the statistics.
+/// - `Err(Error)`: An error indicating failure in fetching or processing the statistics.
 fn get_assets_stats() -> Result<(), Error> {
 	let multichain_assets_store: StorageValueRef = StorageValueRef::persistent(ASSETS_STORAGE_KEY);
 	let assets = multichain_assets_store.get::<Vec<Asset>>().map_err(|e| {
@@ -420,6 +487,19 @@ fn get_assets_stats() -> Result<(), Error> {
 	Ok(())
 }
 
+/// Calculate the total amount for a set of addresses by querying their ERC-20 token balances.
+///
+/// This function iterates over a map of addresses and associated asset information, and for each
+/// address, it queries the ERC-20 token balance using the Ethereum RPC call. It then parses the
+/// response to obtain the balance and accumulates the total amount.
+///
+/// # Arguments
+///
+/// - `address_map`: A map containing addresses and associated asset information.
+///
+/// # Returns
+///
+/// The total amount calculated by summing the balances of the provided addresses.
 fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 {
 	let mut total_amount: u128 = 0;
 	for (router_address, (chain_rpc_url, asset_address)) in address_map.iter() {
@@ -427,7 +507,10 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 		let balance_params = BalanceParams {
 			to: String::from_utf8(asset_address.clone()).unwrap(),
 			// `0x70a08231` is the `balanceOf` hash function selector
-			data: alloc::format!("0x70a08231000000000000000000000000{}", crop_letters(address, 2)),
+			data: alloc::format!(
+				"0x70a08231000000000000000000000000{}",
+				helper::crop_letters(address, 2)
+			),
 		};
 		let result = get_erc20_token_balance(
 			str::from_utf8(&chain_rpc_url).unwrap(),
@@ -446,7 +529,7 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 				}
 				let amount: BalanceRpcResponse = parsed.unwrap();
 				let parsed_amount =
-					u128::from_str_radix(crop_letters(&amount.result, 2), 16).unwrap();
+					u128::from_str_radix(helper::crop_letters(&amount.result, 2), 16).unwrap();
 				total_amount += parsed_amount;
 			},
 			Err(_e) => continue,

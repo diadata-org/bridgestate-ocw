@@ -158,7 +158,7 @@ readChainState();
 Clone substrate-node repo
 
 ```sh
-git clone git@github.com:nnn-gif/substrate-node.git
+git clone git@github.com:diadata-org/bridgestate-ocw.git
 
 ```
 

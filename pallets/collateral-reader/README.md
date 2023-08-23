@@ -83,8 +83,7 @@ type  GracePeriod = ConstU32<10>;
 This repository provides an example of a Substrate node configured with a custom pallet - the "Collateral Reader" pallet.  
 
 ```sh
-git clone git@github.com:nnn-gif/substrate-node.git
-git submodule update --init --recursive
+git clone git@github.com:diadata-org/bridgestate-ocw.git
 
 ```
 

@@ -10,7 +10,7 @@ use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use pallet_asset_conversion::{NativeOrAssetId, NativeOrAssetIdConverter};
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::Encode;
 
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{

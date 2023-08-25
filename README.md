@@ -1,6 +1,36 @@
-# bridgestate-ocw
+# Bridge Attestation Oracle
 
-## About the Collateral Reader Pallet
+DIA’s ‘Bridge Attestation Oracle’ enables the on-chain verification of bridge balances across multiple chains: ”Proof-of-Collateral”. With the oracle’s information, dApps on Polkadot parachains will be able to power security modules to, for instance, trigger automated precautionary notifications and actions when a bridge’s balance drops unexpectedly.
+
+## How it works
+
+The solution consists of 3 key components:
+
+### 1. Off-chain worker
+
+The [Off-chain worker is a Polkadot native feature](https://forum.polkadot.network/t/offchain-workers-design-assumptions-vulnerabilities/2548) that allows validators to aggregate and compute data off-chain in a trustless way, and submit the end result on-chain for protocols to consume. DIA leverages the off-chain worker's functionality to retrieve bridge token balances and issuance. This will help to evaluate the collateralization ratio of each token.
+
+### 2. Community-driven bridge integrations
+
+The second key component of the solution is an open-source library for bridge integrations. As numerous bridges exist in Web3, each with distinct architectures, tracking the token balances of each bridge becomes a complicated task. Therefore, DIA-built bridge aggregators are open-sourced, allowing anyone to write an adaptor for any bridge. We aim to achieve complete decentralization and community-driven development for the entire solution in order to increase trust and scalability.
+Currently there are two bridges integrated in the pallet:
+- Interlay brigde
+- Multichain bridge
+
+### 3. Bridge Attestation Oracle (Collateral Value)
+
+The core feature of the entire solution is providing bridge stakeholders the ability to know if each bridge is fully collateralized at any given time. This solution will be achieved by tracking bridges' locked assets against and issued assets across multiple chains. This enables the calculator of collateral ratios, which protocols can use to define and trigger safety procedures in their code.
+
+- **Example 1: Lending protocol.** A dApp provides a cross-chain token lending market. If a bridge listing the token suddenly becomes undercollateralized, the Bridge Attestation Oracle monitors the state and updates the collateral ratio. The Lending Protocol can use this data to automate actions (e.g. halt operations, liquidate), notify users, and more.
+- **Example 2: Monitoring dashboards.** The oracle's real-time data can be used to create dashboards or trigger alerts / notification via social media bots on Twitter, Telegram, or Discord to warn stakeholder communities in case collateral ratios drop below certain thresholds.
+
+In order to use the collateral ratios, Parachains can integrate a Polkadot Pallet (Polkadot native feature), making all the core functionalities of the Bridge Attestation Oracle available for dApps running on the Parachain. Each parachain will be able to decide if they want to make the oracle a public good. The oracle can be customised to provide updated collateral ratios on every block or alternatively, on a request basis, where values will be updated based on dApps’ request.
+
+Following sections explain how to set-up and run the bridge attestation oracle.
+
+## Running the oracle
+
+### About the Collateral Reader Pallet
 
 The pallet reads the state of various tokens, such as issued tokens, minted tokens, and locked tokens. An offchain worker updates the asset statistics periodically based on the configured time.
 
@@ -31,9 +61,9 @@ fn  get_associated_assets( sefl, minted_asset: Vec<u8>) -> Vec<u8>;
 
 ```
 
-To use this Pallet on your node, you need to define the required methods and obtain the corresponding values.
+To use this Pallet on your node, you need to define the required methods and obtain the corresponding values. Alternatively, you can use [Substrate Node Template](https://github.com/substrate-developer-hub/substrate-node-template) for testing purposes.
 
-### Add the Collateral Reader pallet to your runtime
+#### Add the Collateral Reader pallet to your runtime
 
 In your Cargo.toml file, include the following line:
 
@@ -78,7 +108,7 @@ type  GracePeriod = ConstU32<10>;
 
 ```
 
-### Running Substrate Node Example with Collateral Reader Pallet
+#### Running Substrate Node Example with Collateral Reader Pallet
 
 This repository provides an example of a Substrate node configured with a custom pallet - the "Collateral Reader" pallet.  
 
@@ -87,7 +117,7 @@ git clone git@github.com:diadata-org/bridgestate-ocw.git
 
 ```
 
-#### Start the node and dev network by running
+##### Start the node and dev network by running
 
 ```sh
 cargo build --release
@@ -111,9 +141,13 @@ curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
 
 ```
 
-### Reading Collateral values
+#### Reading Collateral values
 
-#### Reading Collateral values using Browser
+The following section explains how to read collateral values in three different methods. Currently all methods return collateral information for two distinctive bridges:
+- Interlay
+- Multichain
+
+##### Reading Collateral values using Browser
 
 To access the current state of supported Integration Assets, you can utilize the assetStatsStorage storage of the collateralReader pallet. This will give you insights into the collateral values of various assets integrated into the system.
 
@@ -126,7 +160,7 @@ Please follow the instructions below to retrieve the collateral values:
 
 
 
-#### Reading Collateral values using `@polkadot/api`
+##### Reading Collateral values using `@polkadot/api`
 
 ```ts
 const { ApiPromise, WsProvider } = require('@polkadot/api');

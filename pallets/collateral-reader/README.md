@@ -97,7 +97,7 @@ cargo run -- --dev
 Create an account or add a subkey to an existing account, e.g. the example account `Alice` via RPC
 
 ```sh
-curl http://localhost:9933 -H "Content-Type:application/json;charset=utf-8" -d \
+curl http://localhost:9944 -H "Content-Type:application/json;charset=utf-8" -d \
   '{
  "jsonrpc":"2.0",
  "id":1,
@@ -121,11 +121,27 @@ Please follow the instructions below to retrieve the collateral values:
 
 - Open your web browser and go to https://polkadot.js.org/apps/#/explorer.
 - In the developer tab of the Polkadot Apps Explorer, navigate to the `Chain State` section.
-- Find and select the `collateralReader` pallet from the dropdown menu in the `Chain State` section.
+- Find and select the `collateralReaderModule` pallet from the dropdown menu in the `Chain State` section.
 - Access the assetStatsStorage to view the current state of supported assets, including `Interlay` and `Multichain` assets.
 
 
 
+#### Reading Collateral values using Polkadot Dashboard console
+```js
+
+ try {
+     const palletName = 'collateralReaderModule';
+
+     const storageFunction = 'assetStatsStorage';
+
+     const chainState = await api.query[palletName][storageFunction].entries();
+
+    console.log('Chain state:', chainState);
+  } catch (error) {
+    console.error('Error reading chain state:', error);
+  } 
+
+```
 #### Reading Collateral values using `@polkadot/api`
 
 ```ts
@@ -138,7 +154,7 @@ async function readChainState() {
   const api = await ApiPromise.create({ provider });
 
   try {
-     const palletName = 'collateralReader';
+     const palletName = 'collateralReaderModule';
 
      const storageFunction = 'assetStatsStorage';
 

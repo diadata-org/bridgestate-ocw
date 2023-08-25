@@ -57,8 +57,8 @@ impl RPCCalls for InterlayRPCHelper1 {
 			Ok(bytes) => {
 				// Try to convert the bytes to a string.
 
-				let json = String::from_utf8(bytes).unwrap();
-				let parsed_data: RpcResponse = serde_json::from_str(&json).unwrap();
+				let json = String::from_utf8(bytes).expect("err converting bytes string");
+				let parsed_data: RpcResponse = serde_json::from_str(&json).expect("err getting json");
 
 				match parsed_data.result {
 					Some(res) => {

@@ -140,7 +140,7 @@ pub mod helper {
 	/// The equivalent `u128` balance value in little-endian byte order.
 	pub fn hex_to_balance(hex: &str) -> u128 {
 		// let hex: &str = "70ce0360818118000000000000000000";
-		let big_endian_value: u128 = u128::from_str_radix(hex, 16).unwrap();
+		let big_endian_value: u128 = u128::from_str_radix(hex, 16).expect("hex conv");
 		// Convert the value to little endian
 		// let little_endian_value = big_endian_value.to_le();
 		let little_endian_value = big_endian_value.swap_bytes();
@@ -185,8 +185,8 @@ pub mod helper {
 			Ok(bytes) => {
 				// Try to convert the bytes to a string.
 
-				let json = String::from_utf8(bytes).unwrap();
-				let parsed_data: RpcResponse = serde_json::from_str(&json).unwrap();
+				let json = String::from_utf8(bytes).expect("bytes to json err");
+				let parsed_data: RpcResponse = serde_json::from_str(&json).expect("string to json conv");
 
 				match parsed_data.result {
 					Some(res) => {
@@ -244,8 +244,8 @@ pub mod helper {
 			Ok(bytes) => {
 				// Try to convert the bytes to a string.
 
-				let json = String::from_utf8(bytes).unwrap();
-				let parsed_data: RpcResponse = serde_json::from_str(&json).unwrap();
+				let json = String::from_utf8(bytes).expect("bytes to string conv");
+				let parsed_data: RpcResponse = serde_json::from_str(&json).expect("string to json conversion");
 
 				match parsed_data.result {
 					Some(res) => {

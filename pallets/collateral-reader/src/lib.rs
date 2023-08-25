@@ -302,7 +302,7 @@ pub mod pallet {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
 			if signer.can_sign() {
 				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
-				token.try_extend(asset.symbol.clone().into_iter()).unwrap();
+				token.try_extend(asset.symbol.clone().into_iter()).expect("token vec");
 				log::info!("asset {:?}", token.clone());
 				let results = signer.send_signed_transaction(|_account| Call::save_asset_stats {
 					token: token.clone(),
@@ -331,7 +331,7 @@ pub mod pallet {
 			let signer = Signer::<T, T::AuthorityId>::all_accounts();
 			if signer.can_sign() {
 				let mut token: BoundedVec<u8, T::MaxVec> = BoundedVec::default();
-				token.try_extend(asset.symbol.clone().into_iter()).unwrap();
+				token.try_extend(asset.symbol.clone().into_iter()).expect("token vec");
 				log::info!("asset {:?}", token.clone());
 				let results =
 					signer.send_signed_transaction(|_account| Call::save_multichain_asset_stats {

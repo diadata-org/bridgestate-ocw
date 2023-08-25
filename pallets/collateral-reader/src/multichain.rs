@@ -132,7 +132,7 @@ pub enum Error {
 pub fn get_assets_stats_job() {
 	let work_in_progress_storage: StorageValueRef =
 		StorageValueRef::persistent(WORK_IN_PROGRESS_STORAGE_KEY);
-	let work_in_progress = work_in_progress_storage.get::<bool>().unwrap();
+	let work_in_progress = work_in_progress_storage.get::<bool>().expect("err getting work_in_progress");
 	if work_in_progress.is_none() || work_in_progress == Some(false) {
 		work_in_progress_storage.set(&true);
 		let result = get_assets_stats();
@@ -243,7 +243,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 						// skip this object if it doesn't have both anytoken and fromanytoken.
 						continue
 					}
-					let fromanytoken = associated_asset.fromanytoken.clone().unwrap();
+					let fromanytoken = associated_asset.fromanytoken.clone().expect("err getting associated_assets");
 					associated_assets.push(AssociatedAsset {
 						asset_id_on_eth_chain: value.symbol.clone().into(),
 						asset_id: associated_asset.symbol.clone().into(),
@@ -258,7 +258,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 							.into(),
 						address_that_has_issued_assets: fromanytoken.address.clone().into(),
 						minted_asset: fromanytoken.chain_id ==
-							Some(String::from(str::from_utf8(ETH_CHAIN_ID).unwrap())),
+							Some(String::from(str::from_utf8(ETH_CHAIN_ID).expect("ETH_CHAIN_ID conv"))),
 					})
 				}
 			}
@@ -423,7 +423,7 @@ fn get_assets_stats() -> Result<(), Error> {
 		return Ok(())
 	}
 	let mut all_stats: Vec<MultichainAssetStats> = vec![];
-	let unwrapped_chains = chains.unwrap();
+	let unwrapped_chains = chains.expect("err getting chains");
 	let associated_assets =
 		multichain_associated_assets_store.get::<Vec<AssociatedAsset>>().map_err(|e| {
 			log::error!("multichain_associated_assets_store {:?}", e);
@@ -434,10 +434,10 @@ fn get_assets_stats() -> Result<(), Error> {
 		log::error!("multichain_stats_store {:?}", e);
 		<Error>::GetAssetsStatsError
 	})?;
-	for asset in assets.unwrap().iter() {
+	for asset in assets.expect("err getting asssets").iter() {
 		let associated_assets_of_current_asset: Vec<AssociatedAsset> = associated_assets
 			.clone()
-			.unwrap()
+			.expect("err getting associated_assets")
 			.iter()
 			.filter(|i| i.asset_id_on_eth_chain == asset.symbol)
 			.cloned()
@@ -449,9 +449,9 @@ fn get_assets_stats() -> Result<(), Error> {
 			if chain.is_none() {
 				continue
 			}
-			let chain_rpc_url = chain.unwrap().rpc.clone();
+			let chain_rpc_url = chain.expect("err getting chain url").rpc.clone();
 			let eth_chain =
-				unwrapped_chains.iter().find(|x| x.id == ETH_CHAIN_ID.to_vec()).unwrap();
+				unwrapped_chains.iter().find(|x| x.id == ETH_CHAIN_ID.to_vec()).expect("err getting unwrapped_chains");
 			let eth_chain_rpc_url = eth_chain.rpc.clone();
 			locked_addresses_map.insert(
 				associated_asset.address_that_has_locked_assets.clone(),
@@ -473,7 +473,7 @@ fn get_assets_stats() -> Result<(), Error> {
 				issued: total_issued_amount,
 			});
 		} else if !prev_stats.is_none() {
-			let unwrapped_prev_stats = prev_stats.clone().unwrap();
+			let unwrapped_prev_stats = prev_stats.clone().expect("err getting unwrapped_prev_stats");
 			let asset_prev_stats =
 				unwrapped_prev_stats.iter().find(|i| i.asset_id == asset.symbol.clone());
 			if let Some(asset_prev_stats) = asset_prev_stats {
@@ -503,9 +503,9 @@ fn get_assets_stats() -> Result<(), Error> {
 fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 {
 	let mut total_amount: u128 = 0;
 	for (router_address, (chain_rpc_url, asset_address)) in address_map.iter() {
-		let address = str::from_utf8(&router_address).unwrap();
+		let address = str::from_utf8(&router_address).expect("err getting address");
 		let balance_params = BalanceParams {
-			to: String::from_utf8(asset_address.clone()).unwrap(),
+			to: String::from_utf8(asset_address.clone()).expect("err getting asset_address"),
 			// `0x70a08231` is the `balanceOf` hash function selector
 			data: alloc::format!(
 				"0x70a08231000000000000000000000000{}",
@@ -513,7 +513,7 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 			),
 		};
 		let result = get_erc20_token_balance(
-			str::from_utf8(&chain_rpc_url).unwrap(),
+			str::from_utf8(&chain_rpc_url).expect("chain_rpc_url to str"),
 			String::from("eth_call"),
 			(balance_params, String::from("latest")),
 		)
@@ -527,9 +527,9 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 				if let Err(_e) = parsed {
 					continue
 				}
-				let amount: BalanceRpcResponse = parsed.unwrap();
+				let amount: BalanceRpcResponse = parsed.expect("err getting amount");
 				let parsed_amount =
-					u128::from_str_radix(helper::crop_letters(&amount.result, 2), 16).unwrap();
+					u128::from_str_radix(helper::crop_letters(&amount.result, 2), 16).expect("err getting parsed_amount");
 				total_amount += parsed_amount;
 			},
 			Err(_e) => continue,
@@ -546,7 +546,7 @@ impl RPCCalls for MultichainRPCHelper {
 		if let Err(_e) = assets {
 			return Err("MultichainRPC, error getting supported assets.")
 		}
-		Ok(assets.unwrap())
+		Ok(assets.expect("err getting assets"))
 	}
 
 	fn locked(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
@@ -559,16 +559,16 @@ impl RPCCalls for MultichainRPCHelper {
 				log::error!("multichain_stats_store {:?}", e);
 				return b"MultichainRPCHelper, error getting asset stats."
 			})
-			.unwrap();
+			.expect("err getting stats");
 		if stats.is_none() {
 			return Ok(0)
 		}
-		let long_lived_stats = stats.unwrap().clone();
+		let long_lived_stats = stats.expect("err getting stats").clone();
 		let asset_stats = long_lived_stats.iter().find(|i| i.asset_id == asset);
 		if asset_stats.is_none() {
 			return Err("MultichainRPCHelper, error getting issued amount.")
 		}
-		Ok(asset_stats.unwrap().locked)
+		Ok(asset_stats.expect("err getting asset_stats").locked)
 	}
 
 	fn issued(&self, asset: Vec<u8>) -> Result<u128, &'static str> {
@@ -581,16 +581,16 @@ impl RPCCalls for MultichainRPCHelper {
 				log::error!("multichain_stats_store {:?}", e);
 				return b"MultichainRPCHelper, error getting asset stats."
 			})
-			.unwrap();
+			.expect("err getting stats");
 		if stats.is_none() {
 			return Ok(0)
 		}
-		let long_lived_stats = stats.unwrap().clone();
+		let long_lived_stats = stats.expect("err getting stats").clone();
 		let asset_stats = long_lived_stats.iter().find(|i| i.asset_id == asset);
 		if asset_stats.is_none() {
 			return Err("MultichainRPCHelper, error getting issued amount.")
 		}
-		Ok(asset_stats.unwrap().issued)
+		Ok(asset_stats.expect("err getting asset_stats").issued)
 	}
 
 	fn minted_asset(&self, asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
@@ -604,18 +604,18 @@ impl RPCCalls for MultichainRPCHelper {
 		if let Err(_x) = associated_assets {
 			return Ok("".into())
 		}
-		let unwrapped_associated_assets = associated_assets.unwrap();
+		let unwrapped_associated_assets = associated_assets.expect("err getting associated_assets");
 		if unwrapped_associated_assets.is_none() {
 			return Ok("".into())
 		}
-		let long_lived_associated_assets = unwrapped_associated_assets.clone().unwrap();
+		let long_lived_associated_assets = unwrapped_associated_assets.clone().expect("err getting unwrapped_associated_assets");
 		let associated_asset = long_lived_associated_assets
 			.iter()
 			.find(|i| i.asset_id_on_eth_chain == asset && i.minted_asset);
 		if associated_asset.is_none() {
 			return Err("MultichainRPCHelper, error getting minted asset.")
 		}
-		Ok(associated_asset.unwrap().asset_id.clone())
+		Ok(associated_asset.expect("err getting associated_assets").asset_id.clone())
 	}
 
 	fn associated_assets(&self, minted_asset: Vec<u8>) -> Result<Vec<u8>, &'static str> {
@@ -627,10 +627,10 @@ impl RPCCalls for MultichainRPCHelper {
 				log::error!("multichain_associated_assets_store {:?}", e);
 				return b"MultichainRPCHelper, error getting assets."
 			})
-			.unwrap()
-			.unwrap();
+			.expect("err getting all_associated_assets")
+			.expect("");
 		let associated_asset = all_associated_assets.iter().find(|i| i.asset_id == minted_asset);
-		Ok(associated_asset.unwrap().asset_id_on_eth_chain.clone())
+		Ok(associated_asset.expect("err getting asset_id_on_eth-chain").asset_id_on_eth_chain.clone())
 	}
 }
 

@@ -1,4 +1,4 @@
-pub mod helper {
+pub mod helpers {
 	use crate::alloc::borrow::ToOwned;
 	use frame_support::{StorageHasher, Twox128, Twox64Concat};
 	use scale_info::prelude::{format, string::String, vec};
@@ -46,7 +46,7 @@ pub mod helper {
 
 		storage_key.extend_from_slice(&module_hash[..]);
 		storage_key.extend_from_slice(&storage_hash[..]);
-		storage_key.extend_from_slice(&id_hash.as_ref());
+		storage_key.extend_from_slice(id_hash.as_ref());
 
 		storage_key
 	}
@@ -65,8 +65,8 @@ pub mod helper {
 
 		storage_key.extend_from_slice(&module_hash[..]);
 		storage_key.extend_from_slice(&storage_hash[..]);
-		storage_key.extend_from_slice(&key1_hash.as_ref());
-		storage_key.extend_from_slice(&key2_hash.as_ref());
+		storage_key.extend_from_slice(key1_hash.as_ref());
+		storage_key.extend_from_slice(key2_hash.as_ref());
 
 		storage_key
 	}
@@ -143,8 +143,8 @@ pub mod helper {
 		let big_endian_value: u128 = u128::from_str_radix(hex, 16).expect("hex conv");
 		// Convert the value to little endian
 		// let little_endian_value = big_endian_value.to_le();
-		let little_endian_value = big_endian_value.swap_bytes();
-		little_endian_value
+		
+		big_endian_value.swap_bytes()
 	}
 
 	/// Query the total collateral locked by a user in the vault registry for a specific token.
@@ -167,7 +167,7 @@ pub mod helper {
 		log::info!("calling total_user_vault_collateral");
 		let module_name = "VaultRegistry";
 		let storage_name = "TotalUserVaultCollateral";
-		let storage_key = generate_storage_key(module_name, &storage_name);
+		let storage_key = generate_storage_key(module_name, storage_name);
 		let mut storage_key_hash = to_hex(storage_key);
 
 		if token.ne(&String::from("DOT")) {
@@ -193,7 +193,7 @@ pub mod helper {
 						log::error!("Result: {}", res);
 						let stripped_string = res.strip_prefix("0x").unwrap_or(&res);
 
-						locked = hex_to_balance(&stripped_string);
+						locked = hex_to_balance(stripped_string);
 
 						log::info!("Result: issued {}", locked)
 					},
@@ -226,7 +226,7 @@ pub mod helper {
 		log::info!("calling total_user_vault_collateral");
 		let module_name = "Oracle";
 		let storage_name = "Aggregate";
-		let storage_key = generate_storage_key(module_name, &storage_name);
+		let storage_key = generate_storage_key(module_name, storage_name);
 		let mut storage_key_hash = to_hex(storage_key);
 
 		if token.ne(&String::from("DOT")) {
@@ -252,7 +252,7 @@ pub mod helper {
 						log::error!("Result: {}", res);
 						let stripped_string = res.strip_prefix("0x").unwrap_or(&res);
 
-						locked = hex_to_balance(&stripped_string);
+						locked = hex_to_balance(stripped_string);
 
 						log::info!("Result: issued {}", locked)
 					},
@@ -285,7 +285,7 @@ pub mod helper {
 	/// ```
 
 	pub fn crop_letters(s: &str, pos: usize) -> &str {
-		match s.char_indices().skip(pos).next() {
+		match s.char_indices().nth(pos) {
 			Some((pos, _)) => &s[pos..],
 			None => "",
 		}

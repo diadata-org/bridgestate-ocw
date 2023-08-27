@@ -1,4 +1,4 @@
-use crate::{helper::helper, impls::RPCCalls, Asset, AssetCollector, MultichainData};
+use crate::{helper::helpers, impls::RPCCalls, Asset, AssetCollector, MultichainData};
 use codec::{Decode, Encode};
 use frame_support::RuntimeDebug;
 use scale_info::prelude::string::String;
@@ -159,7 +159,7 @@ fn get_chains() -> Result<Vec<Chain>, Error> {
 	let multichain_chains_store: StorageValueRef = StorageValueRef::persistent(CHAINS_STORAGE_KEY);
 	if let Ok(Some(chains)) = multichain_chains_store.get::<Vec<Chain>>() {
 		// chains has already been fetched. Return early.
-		return Ok(chains)
+		Ok(chains)
 	} else {
 		const HTTP_REMOTE_REQUEST: &str = "https://scanapi.multichain.org/data/chain?type=mainnet";
 		let resp_str = match call_api(HTTP_REMOTE_REQUEST) {
@@ -205,7 +205,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 	let multichain_assets_store: StorageValueRef = StorageValueRef::persistent(ASSETS_STORAGE_KEY);
 	if let Ok(Some(assets)) = multichain_assets_store.get::<Vec<Asset>>() {
 		// assets has already been fetched. Return early.
-		return Ok(assets)
+		Ok(assets)
 	} else {
 		const HTTP_REMOTE_REQUEST: &str = "https://bridgeapi.multichain.org/v4/tokenlistv4/1";
 		let resp_str = match call_api(HTTP_REMOTE_REQUEST) {
@@ -224,7 +224,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 			vec!["ETH", "WETH", "WBTC", "USDC", "USDT", "DAI"];
 		for (_, value) in response.iter() {
 			let symbol = &value.symbol.as_str();
-			if !whitelisted_asset_symbols.contains(&symbol) {
+			if !whitelisted_asset_symbols.contains(symbol) {
 				continue
 			}
 			let asset = Asset {
@@ -270,7 +270,7 @@ fn get_assets() -> Result<Vec<Asset>, Error> {
 			StorageValueRef::persistent(ASSOCIATED_ASSETS_STORAGE_KEY);
 		multichain_associated_assets_store.set(&associated_assets);
 
-		return Ok(assets)
+		Ok(assets)
 	}
 }
 
@@ -346,8 +346,8 @@ fn get_erc20_token_balance(
 ) -> Result<Vec<u8>, Error> {
 	let request_body = BalanceRpc {
 		jsonrpc: String::from("2.0"),
-		method: method.into(),
-		params: params.into(),
+		method,
+		params,
 		id: String::from("1"),
 	};
 	let request_body_str =
@@ -472,7 +472,7 @@ fn get_assets_stats() -> Result<(), Error> {
 				locked: total_locked_amount,
 				issued: total_issued_amount,
 			});
-		} else if !prev_stats.is_none() {
+		} else if prev_stats.is_some() {
 			let unwrapped_prev_stats = prev_stats.clone().expect("err getting unwrapped_prev_stats");
 			let asset_prev_stats =
 				unwrapped_prev_stats.iter().find(|i| i.asset_id == asset.symbol.clone());
@@ -503,17 +503,17 @@ fn get_assets_stats() -> Result<(), Error> {
 fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 {
 	let mut total_amount: u128 = 0;
 	for (router_address, (chain_rpc_url, asset_address)) in address_map.iter() {
-		let address = str::from_utf8(&router_address).expect("err getting address");
+		let address = str::from_utf8(router_address).expect("err getting address");
 		let balance_params = BalanceParams {
 			to: String::from_utf8(asset_address.clone()).expect("err getting asset_address"),
 			// `0x70a08231` is the `balanceOf` hash function selector
 			data: alloc::format!(
 				"0x70a08231000000000000000000000000{}",
-				helper::crop_letters(address, 2)
+				helpers::crop_letters(address, 2)
 			),
 		};
 		let result = get_erc20_token_balance(
-			str::from_utf8(&chain_rpc_url).expect("chain_rpc_url to str"),
+			str::from_utf8(chain_rpc_url).expect("chain_rpc_url to str"),
 			String::from("eth_call"),
 			(balance_params, String::from("latest")),
 		)
@@ -529,7 +529,7 @@ fn get_total_amount(address_map: BTreeMap<Vec<u8>, (Vec<u8>, AssetId)>) -> u128 
 				}
 				let amount: BalanceRpcResponse = parsed.expect("err getting amount");
 				let parsed_amount =
-					u128::from_str_radix(helper::crop_letters(&amount.result, 2), 16).expect("err getting parsed_amount");
+					u128::from_str_radix(helpers::crop_letters(&amount.result, 2), 16).expect("err getting parsed_amount");
 				total_amount += parsed_amount;
 			},
 			Err(_e) => continue,
@@ -557,7 +557,7 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<MultichainAssetStats>>()
 			.map_err(|e| {
 				log::error!("multichain_stats_store {:?}", e);
-				return b"MultichainRPCHelper, error getting asset stats."
+				b"MultichainRPCHelper, error getting asset stats."
 			})
 			.expect("err getting stats");
 		if stats.is_none() {
@@ -579,7 +579,7 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<MultichainAssetStats>>()
 			.map_err(|e| {
 				log::error!("multichain_stats_store {:?}", e);
-				return b"MultichainRPCHelper, error getting asset stats."
+				b"MultichainRPCHelper, error getting asset stats."
 			})
 			.expect("err getting stats");
 		if stats.is_none() {
@@ -599,7 +599,7 @@ impl RPCCalls for MultichainRPCHelper {
 		let associated_assets =
 			multichain_associated_assets_store.get::<Vec<AssociatedAsset>>().map_err(|e| {
 				log::error!("multichain_associated_assets_store {:?}", e);
-				return "MultichainRPCHelper, error getting assets."
+				"MultichainRPCHelper, error getting assets."
 			});
 		if let Err(_x) = associated_assets {
 			return Ok("".into())
@@ -625,7 +625,7 @@ impl RPCCalls for MultichainRPCHelper {
 			.get::<Vec<AssociatedAsset>>()
 			.map_err(|e| {
 				log::error!("multichain_associated_assets_store {:?}", e);
-				return b"MultichainRPCHelper, error getting assets."
+				b"MultichainRPCHelper, error getting assets."
 			})
 			.expect("err getting all_associated_assets")
 			.expect("");

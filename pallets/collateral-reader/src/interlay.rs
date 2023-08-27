@@ -10,7 +10,7 @@ use scale_info::prelude::string::String;
 
 use sp_std::{boxed::Box, str, vec, vec::Vec};
 
-use crate::helper::helper;
+use crate::helper::helpers;
 
 /// Represents a JSON-RPC response structure.
 #[derive(Serialize, Deserialize)]
@@ -26,17 +26,14 @@ pub struct InterlayRPCHelper1 {}
 impl RPCCalls for InterlayRPCHelper1 {
 	/// Get the list of supported assets on Interlay.
 	fn supported_assets(&self) -> Result<Vec<Asset>, &'static str> {
-		let mut assets: Vec<Asset> = Vec::new();
-		assets.push(Asset {
+		Ok(vec![Asset {
 			address: b"2".to_vec(),
 			chain: b"interlay".to_vec(),
 			metadata: b"d67c5ba80ba065480001".to_vec(),
 			decimals: 0,
 			symbol: b"DOT".to_vec(),
 			name: b"DOT".to_vec(),
-		});
-
-		Ok(assets)
+		}])
 	}
 	/// Get the locked amount of a specific asset on Interlay.
 	fn locked(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
@@ -45,13 +42,13 @@ impl RPCCalls for InterlayRPCHelper1 {
 		let module_name = "Tokens";
 		let storage_name = "TotalIssuance";
 
-		let storage_key = helper::generate_storage_key(module_name, &storage_name);
+		let storage_key = helpers::generate_storage_key(module_name, storage_name);
 
-		let mut storage_key_hash = helper::to_hex(storage_key);
+		let mut storage_key_hash = helpers::to_hex(storage_key);
 
 		storage_key_hash = "0x".to_owned() + &storage_key_hash + "d67c5ba80ba065480001";
 
-		let result = helper::fetch_data("state_getKeys", &storage_key_hash);
+		let result = helpers::fetch_data("state_getKeys", &storage_key_hash);
 		let mut locked = 0;
 		match result {
 			Ok(bytes) => {
@@ -65,7 +62,7 @@ impl RPCCalls for InterlayRPCHelper1 {
 						log::error!("Result: {}", res);
 						let stripped_string = res.strip_prefix("0x").unwrap_or(&res);
 
-						locked = helper::hex_to_balance(&stripped_string);
+						locked = helpers::hex_to_balance(stripped_string);
 
 						log::info!("Result: locked {}", locked)
 					},
@@ -82,15 +79,15 @@ impl RPCCalls for InterlayRPCHelper1 {
 
 	/// Get the issued amount of a specific asset on Interlay.
 	fn issued(&self, _asset: Vec<u8>) -> Result<u128, &'static str> {
-		let issued_dot = helper::total_user_vault_collateral("DOT");
-		let issued_usdt = helper::total_user_vault_collateral("USDT");
+		let issued_dot = helpers::total_user_vault_collateral("DOT");
+		let issued_usdt = helpers::total_user_vault_collateral("USDT");
 
 		log::info!("Issued dot: {}", issued_dot);
 		log::info!("Issued usdt: {}", issued_usdt);
 
-		let oracle_dot: u128 = helper::oracle("DOT");
+		let oracle_dot: u128 = helpers::oracle("DOT");
 
-		let oracle_usdt: u128 = helper::oracle("USDT");
+		let oracle_usdt: u128 = helpers::oracle("USDT");
 
 		log::info!("oracle dot: {}", oracle_dot);
 		log::info!("oracle usdt: {}", oracle_usdt);

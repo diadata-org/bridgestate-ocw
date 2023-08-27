@@ -1,5 +1,5 @@
 use crate::{
-	helper::helper,
+	helper::helpers,
 	mock::{new_test_ext, RuntimeEvent, *},
 };
 use frame_support::assert_ok;
@@ -51,7 +51,7 @@ fn test_save_asset_event() {
 
 		// Ensure the event was emitted
 		let _expected_token = token.clone();
-		let expected_who = alice.public().clone();
+		let expected_who = alice.public();
 		assert!(System::events().iter().any(|record| match &record.event {
 			RuntimeEvent::TemplateModule(crate::Event::AssetUpdated {
 				token: event_token,
@@ -130,17 +130,17 @@ fn test_generate_storage_key() {
 	let module_prefix = "Module";
 	let storage_item_prefix = "StorageItem";
 
-	let storage_key = helper::generate_storage_key(module_prefix, storage_item_prefix);
+	let storage_key = helpers::generate_storage_key(module_prefix, storage_item_prefix);
 
 	assert_eq!(storage_key.len(), 32);
-	let hex_string = helper::to_hex(storage_key.clone());
+	let hex_string = helpers::to_hex(storage_key.clone());
 	assert_eq!(hex_string, "f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b");
 }
 
 #[test]
 fn test_to_hex() {
 	let storage_key = vec![0x12, 0x34, 0x56, 0x78];
-	let hex_string = helper::to_hex(storage_key.clone());
+	let hex_string = helpers::to_hex(storage_key.clone());
 
 	assert_eq!(hex_string, "12345678");
 }
@@ -151,11 +151,11 @@ fn test_generate_double_storage_key() {
 	let storage_item_prefix = "StorageItem";
 	let id = "123";
 
-	let storage_key = helper::generate_double_storage_key(module_prefix, storage_item_prefix, id);
+	let storage_key = helpers::generate_double_storage_key(module_prefix, storage_item_prefix, id);
 
 	assert_eq!(storage_key.len(), 43);
 
-	let hex_string = helper::to_hex(storage_key.clone());
+	let hex_string = helpers::to_hex(storage_key.clone());
 	assert_eq!(
 		hex_string,
 		"f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b85e8a73f227d693c313233"
@@ -170,10 +170,10 @@ fn test_generate_double_storage_keys() {
 	let key2 = "Key2";
 
 	let storage_key =
-		helper::generate_double_storage_keys(module_prefix, storage_item_prefix, key1, key2);
+		helpers::generate_double_storage_keys(module_prefix, storage_item_prefix, key1, key2);
 
 	assert_eq!(storage_key.len(), 56);
 
-	let hex_string = helper::to_hex(storage_key.clone());
+	let hex_string = helpers::to_hex(storage_key.clone());
 	assert_eq!(hex_string, "f7bc842de0628e5efb0481209c6551eef060e3619f9cd538c7d03fe5f89b9d4b4d26e586dc10a1bc4b65793157f7f2fb894dfd264b657932");
 }

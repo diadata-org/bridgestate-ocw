@@ -1,0 +1,12 @@
+name: Test Required Reviewers
+
+on:
+  workflow_dispatch:  # Allows manual triggering of the workflow
+
+jobs:
+  test_review:
+    runs-on: ubuntu-latest
+    environment: test-environment  # Specify the environment with required reviewers
+    steps:
+      - name: Approval Required Step
+        run: echo "This step requires approval from a reviewer in the environment settings."
